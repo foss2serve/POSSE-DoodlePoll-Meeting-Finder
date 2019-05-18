@@ -1,4 +1,4 @@
-DOODLE_POLL_CSV_FILE='sample_data/Doodle.csv'
+DOODLE_POLL_CSV_FILE='sample_data/Doodle2.csv'
 FACILITATORS = [
     'Stoney Jackson',
     'Lori Postner',
@@ -7,9 +7,10 @@ FACILITATORS = [
     'Heidi Ellis',
     'Clif Kussmaul'
 ]
+NUMBER_OF_MEETINGS=3
 FILTER_MEETINGS_WITH_FEWER_ATTENDEES_THAN=6
 FILTER_MEETINGS_WITH_FEWER_FACILITATORS_THAN=2
-FILTER_MEETINGS_WITH_TIME_LATER_THAN=17
+FILTER_MEETINGS_WITH_TIME_LATER_THAN=21
 FILTER_MEETINGS_WITH_TIME_EARLIER_THAN=9
 
 from itertools import combinations
@@ -39,7 +40,7 @@ def main():
     print(len(meetings), 'meetings')
 
     solution_count = 0
-    for meeting_set in combinations(meetings, 3):
+    for meeting_set in combinations(meetings, NUMBER_OF_MEETINGS):
         if all_participants_can_make_at_least_one_meeting(meeting_set, dp.getNames()):
             solution_count += 1
             print_meeting_set(meeting_set)
