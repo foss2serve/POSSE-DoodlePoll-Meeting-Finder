@@ -1,4 +1,4 @@
-DOODLE_POLL_CSV_FILE='sample_data/Doodle2.csv'
+DOODLE_POLL_CSV_FILE='Doodle.csv'
 FACILITATORS = [
     'Stoney Jackson',
     'Lori Postner',
