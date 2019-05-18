@@ -1,11 +1,5 @@
-from itertools import combinations
-import sys
-
-
-from lib.doodlepoll import DoodlePoll
-
-
-facilitators = [
+DOODLE_POLL_CSV_FILE='sample_data/Doodle.csv'
+FACILITATORS = [
     'Stoney Jackson',
     'Lori Postner',
     'Greg Hislop',
@@ -13,31 +7,35 @@ facilitators = [
     'Heidi Ellis',
     'Clif Kussmaul'
 ]
+FILTER_MEETINGS_WITH_FEWER_ATTENDEES_THAN=6
+FILTER_MEETINGS_WITH_FEWER_FACILITATORS_THAN=2
+FILTER_MEETINGS_WITH_TIME_LATER_THAN=17
+FILTER_MEETINGS_WITH_TIME_EARLIER_THAN=9
+
+from itertools import combinations
+import sys
+from lib.doodlepoll import DoodlePoll
 
 
 def main():
-    dp = DoodlePoll.from_csv('sample_data/Doodle.csv')
+    dp = DoodlePoll.from_csv(DOODLE_POLL_CSV_FILE)
     meetings = list(dp.yieldMeetings())
     print(len(meetings), 'meetings')
 
-    print('Eliminating meetings with fewer than 6 attendees.')
-    meetings = [m for m in meetings if m.numberWhoCanAttend() >= 6]
+    print(f'Eliminating meetings with fewer than {FILTER_MEETINGS_WITH_FEWER_ATTENDEES_THAN} attendees.')
+    meetings = [m for m in meetings if m.numberWhoCanAttend() >= FILTER_MEETINGS_WITH_FEWER_ATTENDEES_THAN]
     print(len(meetings), 'meetings')
 
-    print('Eliminating meetings with fewer than 2 facilitators.')
-    meetings = [m for m in meetings if hasAtLeastTwoFacilitators(m.names)]
+    print(f'Eliminating meetings with fewer than {FILTER_MEETINGS_WITH_FEWER_FACILITATORS_THAN} facilitators.')
+    meetings = [m for m in meetings if m.numberOfFacilitators(FACILITATORS) >= FILTER_MEETINGS_WITH_FEWER_FACILITATORS_THAN]
     print(len(meetings), 'meetings')
 
-    print('Eliminating meetings after 5 PM.')
-    meetings = [m for m in meetings if isBefore5PM(m.getDatetime())]
+    print(f'Eliminating meetings after {FILTER_MEETINGS_WITH_TIME_LATER_THAN}.')
+    meetings = [m for m in meetings if m.startHour() < FILTER_MEETINGS_WITH_TIME_LATER_THAN]
     print(len(meetings), 'meetings')
 
-    print('Eliminating meetings after 9 AM.')
-    meetings = [m for m in meetings if isAfter9AM(m.getDatetime())]
-    print(len(meetings), 'meetings')
-
-    print('Eliminating weekend meetings.')
-    meetings = [m for m in meetings if isWeekend(m.getDatetime())]
+    print(f'Eliminating meetings before {FILTER_MEETINGS_WITH_TIME_EARLIER_THAN}.')
+    meetings = [m for m in meetings if m.startHour() >= FILTER_MEETINGS_WITH_TIME_EARLIER_THAN]
     print(len(meetings), 'meetings')
 
     solution_count = 0
@@ -56,7 +54,7 @@ def all_participants_can_make_at_least_one_meeting(meeting_set, all_people):
             if n in all_people:
                 all_people.remove(n)
     for p in all_people:
-        if p not in facilitators:
+        if p not in FACILITATORS:
             return False
     return True
 
@@ -65,24 +63,6 @@ def print_meeting_set(meeting_set):
     print("===========================")
     for m in meeting_set:
         print(m)
-
-
-def hasAtLeastTwoFacilitators(names):
-    count = 0
-    for f in facilitators:
-        if f in names:
-            count += 1
-        if count >= 2:
-            return True
-    return False
-
-
-def isBefore5PM(datetime):
-    return datetime.hour < 17
-
-
-def isAfter9AM(datetime):
-    return datetime.hour >= 9
 
 
 def isWeekend(datetime):
