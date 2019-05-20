@@ -73,18 +73,8 @@ class DoodlePoll:
 
     @classmethod
     def from_csv(cls, csv_filename):
-        rows = cls.load_csv_rows(csv_filename)
+        rows = load_csv(csv_filename)
         return DoodlePoll(rows)
-
-    @classmethod
-    def load_csv_rows(cls, csv_filename):
-        import csv
-        rows = []
-        with open(csv_filename, newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                rows.append(row)
-        return rows
 
     @classmethod
     def save_csv_rows(cls, csv_filename, rows):
@@ -184,6 +174,16 @@ class Meeting:
 
     def startHour(self):
         return self.getDatetime().hour
+
+
+def load_csv(path):
+    import csv
+    rows = []
+    with open(path, newline='') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            rows.append(row)
+    return rows
 
 
 if __name__ == '__main__':
