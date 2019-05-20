@@ -76,13 +76,6 @@ class DoodlePoll:
         rows = load_csv(csv_filename)
         return DoodlePoll(rows)
 
-    @classmethod
-    def save_csv_rows(cls, csv_filename, rows):
-        import csv
-        with open(csv_filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(rows)
-
     def __init__(self, rows):
         self.rows = rows
 
