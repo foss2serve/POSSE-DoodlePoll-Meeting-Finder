@@ -3,9 +3,8 @@ import argparse
 
 def main():
     args = argparser().parse_args()
-    args.facilitators = args.facilitators.split(',')
     doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
-    meetings = parse_doodlepoll_csv_string_into_meetings(doodlepoll_csv_string)
+    meetings = parse_meetings(doodlepoll_csv_string)
     meetings = filter_meetings(meetings, meeting_filters(args))
     meeting_sets = generate_meeting_sets(meetings, args.k)
     meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args))
@@ -51,11 +50,6 @@ def argparser():
         '--max-facilitators',
         type=int,
         help='Exclude meetings with more than the given number of facilitators.')
-    parser.add_argument(
-        '--facilitators',
-        default='',
-        help='Comma separated list of facilitators: e.g., --facilitators "Amy Jones,Bob Smith"'
-    )
     return parser
 
 
@@ -64,7 +58,7 @@ def load_file(filepath):
         return f.read()
 
 
-def parse_doodlepoll_csv_string_into_meetings(csv_string):
+def parse_meetings(csv_string):
     from lib import doodlepoll
     meetings = doodlepoll.parse_csv_string(csv_string)
     return meetings
@@ -84,9 +78,9 @@ def meeting_filters(args):
     if args.max_attendance:
         filters.append(doodlepoll.max_attendance_filter(args.max_attendance))
     if args.min_facilitators:
-        filters.append(doodlepoll.min_facilitator_filter(args.min_facilitators, args.facilitators))
+        filters.append(doodlepoll.min_facilitator_filter(args.min_facilitators))
     if args.max_facilitators:
-        filters.append(doodlepoll.max_facilitator_filter(args.max_facilitators, args.facilitators))
+        filters.append(doodlepoll.max_facilitator_filter(args.max_facilitators))
     return filters
 
 
