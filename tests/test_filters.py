@@ -18,7 +18,7 @@ class TestFilters(unittest.TestCase):
         meetings = [Meeting(datetime.strptime(m, '%m/%d/%Y'), None, None) for m in meetings]
         sat = meetings[-2]
         sun = meetings[-1]
-        meetings = list(filter(doodlepoll.exclude_meetings_on_weekends(), meetings))
+        meetings = list(filter(doodlepoll.weekday_filter(), meetings))
         self.assertTrue(sat not in meetings)
         self.assertTrue(sun not in meetings)
         self.assertEqual(len(meetings), 5)
@@ -35,7 +35,7 @@ class TestFilters(unittest.TestCase):
         five = meetings[1]
         six = meetings[2]
         seven = meetings[3]
-        meetings = list(filter(doodlepoll.exclude_meetings_starting_before(6), meetings))
+        meetings = list(filter(doodlepoll.min_start_filter(6), meetings))
         self.assertListEqual(meetings, [six, seven])
 
     def test_filter_after(self):
@@ -50,7 +50,7 @@ class TestFilters(unittest.TestCase):
         five = meetings[1]
         six = meetings[2]
         seven = meetings[3]
-        meetings = list(filter(doodlepoll.exclude_meetings_starting_after(6), meetings))
+        meetings = list(filter(doodlepoll.max_start_filter(6), meetings))
         self.assertListEqual(meetings, [four, five, six])
 
     def test_filter_attendees_fewer(self):
@@ -64,7 +64,7 @@ class TestFilters(unittest.TestCase):
         one = meetings[1]
         two = meetings[2]
         three = meetings[3]
-        meetings = list(filter(doodlepoll.exclude_meetings_with_attendees_fewer_than(2), meetings))
+        meetings = list(filter(doodlepoll.min_attendance_filter(2), meetings))
         self.assertListEqual(meetings, [two, three])
 
     def test_filter_attendees_greater(self):
@@ -78,5 +78,5 @@ class TestFilters(unittest.TestCase):
         one = meetings[1]
         two = meetings[2]
         three = meetings[3]
-        meetings = list(filter(doodlepoll.exclude_meetings_with_attendees_greater_than(2), meetings))
+        meetings = list(filter(doodlepoll.max_attendance_filter(2), meetings))
         self.assertListEqual(meetings, [zero, one, two])
