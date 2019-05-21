@@ -42,15 +42,15 @@ def parse_doodlepoll_csv_string_into_meetings(csv_string):
 def meeting_filters(args):
     filters = []
     if args.exclude_weekend:
-        filters.append(lambda m: m.datetime.weekday() < 5)
+        filters.append(doodlepoll.exclude_meetings_on_weekends())
     if args.exclude_before:
-        filters.append(lambda m: m.datetime.hour >= args.exclude_before)
+        filters.append(doodlepoll.exclude_meetings_starting_before(args.exclude_before))
     if args.exclude_after:
-        filters.append(lambda m: m.datetime.hour <= args.exclude_after)
+        filters.append(doodlepoll.exclude_meetings_starting_before(args.exclude_after))
     if args.exclude_smaller_than:
-        filters.append(lambda m: m.those_who_can_attend >= args.exclude_smaller_than)
+        filters.append(doodlepoll.exclude_meetings_with_attendees_fewer_than(args.exclude_smaller_than))
     if args.exclude_larger_than:
-        filters.append(lambda m: m.those_who_can_attend <= args.exclude_larger_than)
+        filters.append(doodlepoll.exclude_meetings_with_attendees_greater_than(args.exclude_larger_than))
     return filters
 
 
