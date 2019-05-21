@@ -3,6 +3,7 @@ import argparse
 
 def main():
     args = argparser().parse_args()
+    args.facilitators = args.facilitators.split(',')
     doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
     meetings = parse_doodlepoll_csv_string_into_meetings(doodlepoll_csv_string)
     meetings = filter_meetings(meetings, meeting_filters(args))
@@ -52,6 +53,7 @@ def argparser():
         help='Exclude meetings with more than the given number of facilitators.')
     parser.add_argument(
         '--facilitators',
+        default='',
         help='Comma separated list of facilitators: e.g., --facilitators "Amy Jones,Bob Smith"'
     )
     return parser
@@ -103,6 +105,7 @@ def generate_meeting_sets(meetings, k):
 
 
 def meeting_set_filters(args):
+    from lib import doodlepoll
     return []
 
 
@@ -114,10 +117,12 @@ def filter_meeting_sets(meeting_sets, meeting_set_filters):
 
 def print_meeting_sets(meeting_sets):
     meeting_sets = list(meeting_sets)
-    for ms in meeting_sets:
-        print("==================================")
+    for i, ms in enumerate(meeting_sets, 1):
+        print(f'========= Solution {i} =============')
         for m in ms:
+            print()
             print(m)
+        print()
 
 
 if __name__ == '__main__':
