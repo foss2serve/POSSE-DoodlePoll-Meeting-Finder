@@ -8,7 +8,7 @@ def main():
     meetings = filter_meetings(meetings, meeting_filters(args))
     meeting_sets = generate_meeting_sets(meetings, args.k)
     meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args))
-    #print_meeting_sets(meeting_sets)
+    print_meeting_sets(meeting_sets)
 
 
 def argparser():
@@ -115,7 +115,9 @@ def filter_meeting_sets(meeting_sets, meeting_set_filters):
 def print_meeting_sets(meeting_sets):
     meeting_sets = list(meeting_sets)
     for ms in meeting_sets:
-        print(ms)
+        print("==================================")
+        for m in ms:
+            print(m)
 
 
 if __name__ == '__main__':
