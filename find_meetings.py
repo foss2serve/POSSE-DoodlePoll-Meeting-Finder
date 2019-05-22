@@ -7,7 +7,7 @@ def main():
     meetings = parse_meetings(doodlepoll_csv_string)
     meetings = filter_meetings(meetings, meeting_filters(args))
     meeting_sets = generate_meeting_sets(meetings, args.k)
-    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args))
+    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_participants(doodlepoll_csv_string)))
     print_meeting_sets(meeting_sets)
 
 
@@ -64,6 +64,12 @@ def parse_meetings(csv_string):
     return meetings
 
 
+def parse_participants(csv_string):
+    from lib import doodlepoll
+    participants = doodlepoll.parse_participants(csv_string)
+    return participants
+
+
 def meeting_filters(args):
     from lib import doodlepoll
     filters = []
@@ -98,14 +104,15 @@ def generate_meeting_sets(meetings, k):
     return combinations(meetings, k)
 
 
-def meeting_set_filters(args):
+def meeting_set_filters(args, participants):
     from lib import doodlepoll
-    return []
+    return [doodlepoll.all_participants_covered_filter(participants)]
 
 
 def filter_meeting_sets(meeting_sets, meeting_set_filters):
+    meeting_sets = list(meeting_sets)
     for f in meeting_set_filters:
-        meeting_sets = filter(f, meeting_sets)
+        meeting_sets = list(filter(f, meeting_sets))
     return meeting_sets
 
 
