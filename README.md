@@ -12,7 +12,7 @@ at least one.
 1. Download Excel file from Doodle Poll.
 2. Use Excel to convert it to a CSV file.
 3. Edit CSV and prefix facilitators' names with * .
-4. Then run find_meetings.py from the root of the project like this:
+4. Then to print all 3-meeting solutions, from the root of the project...
 
 ```bash
 $ python3 find_meetings.py path/to/Doodle.csv 3
