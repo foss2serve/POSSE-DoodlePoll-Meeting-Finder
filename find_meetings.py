@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+from itertools import combinations
 
 
 def main():
@@ -88,7 +89,6 @@ def filter_meetings(meetings, meeting_filters):
 
 
 def generate_meeting_sets(meetings, k):
-    from itertools import combinations
     return combinations(meetings, k)
 
 
