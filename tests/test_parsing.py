@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 
 # system under test
-from lib import doodlepoll
+import find_meetings
 
 
 DOODLEPOLL_CSV_STRING = '''"Poll ""IRC 2""",,,,,,
@@ -22,13 +22,13 @@ Count,the,counts,can,be,reproduced,placeholder'''
 
 class TestParsing(unittest.TestCase):
     def setUp(self):
-        self.parsed_meetings = doodlepoll.parse_csv_string(DOODLEPOLL_CSV_STRING)
+        self.parsed_meetings = find_meetings.parse_meetings(DOODLEPOLL_CSV_STRING)
 
     def test_parse_into_a_list(self):
         self.assertTrue(isinstance(self.parsed_meetings, list))
 
     def test_elements_are_meetings(self):
-        self.assertTrue(all(isinstance(m, doodlepoll.Meeting) for m in self.parsed_meetings))
+        self.assertTrue(all(isinstance(m, find_meetings.Meeting) for m in self.parsed_meetings))
 
     def test_meetings_have_a_datetime(self):
         self.assertTrue(all(isinstance(m.datetime, datetime) for m in self.parsed_meetings))
