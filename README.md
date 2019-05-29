@@ -47,19 +47,6 @@ at least one.
     MinParticipantsFilter(3):  in=20, filtered=2, out=18
     MaxParticipantsFilter(6):  in=18, filtered=0, out=18
     There are 816 3-meeting candidates
-    APPLYING MEETING FILTERS
-    WeekdayFilter:  in=84, filtered=14, out=70
-    MinStartFilter(9):  in=70, filtered=10, out=60
-    MaxStartFilter(15):  in=60, filtered=25, out=35
-    MinPeopleFilter(4):  in=35, filtered=2, out=33
-    MaxPeopleFilter(8):  in=33, filtered=3, out=30
-    MinFacilitatorsFilter(1):  in=30, filtered=3, out=27
-    MinParticipantsFilter(3):  in=27, filtered=2, out=25
-    MaxParticipantsFilter(6):  in=25, filtered=0, out=25
-    There are 2300 3-meeting candidates
-    APPLYING CANDIDATE FILTERS
-    AllParticipantsCanAttendAtLeastOneMeetingFilter:  in=2300, filtered=2298, out=2
-    MaxFacilitationsFilter(min_facilitators=1, max_facilitations=2):  in=2, filtered=0, out=2
     $
     ```
 
