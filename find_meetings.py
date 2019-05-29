@@ -9,7 +9,7 @@ def main():
     meetings = parse_meetings(doodlepoll_csv_string)
     meetings = filter_meetings(meetings, meeting_filters(args))
     meeting_sets = generate_meeting_sets(meetings, args.k)
-    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_participants(doodlepoll_csv_string)))
+    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_people(doodlepoll_csv_string)))
     print_meeting_sets(meeting_sets)
 
 
@@ -37,13 +37,13 @@ def argparser():
         type=int,
         help='Exclude meetings starting after hour (24 clock).')
     parser.add_argument(
-        '--min-attendance',
+        '--min-people',
         type=int,
-        help='Exclude meetings with fewer than the given number of attendees.')
+        help='Exclude meetings with fewer than the given number of people who can attend.')
     parser.add_argument(
-        '--max-attendance',
+        '--max-people',
         type=int,
-        help='Exclude meetings with more than the given number of attendees.')
+        help='Exclude meetings with more than the given number of people who can attend.')
     parser.add_argument(
         '--min-facilitators',
         type=int,
@@ -68,10 +68,10 @@ def meeting_filters(args):
         filters.append(min_start_filter(args.min_start))
     if args.max_start:
         filters.append(max_start_filter(args.max_start))
-    if args.min_attendance:
-        filters.append(min_attendance_filter(args.min_attendance))
-    if args.max_attendance:
-        filters.append(max_attendance_filter(args.max_attendance))
+    if args.min_people:
+        filters.append(min_people_filter(args.min_people))
+    if args.max_people:
+        filters.append(max_people_filter(args.max_people))
     if args.min_facilitators:
         filters.append(min_facilitator_filter(args.min_facilitators))
     if args.max_facilitators:
@@ -92,8 +92,8 @@ def generate_meeting_sets(meetings, k):
     return combinations(meetings, k)
 
 
-def meeting_set_filters(args, participants):
-    return [all_participants_covered_filter(participants)]
+def meeting_set_filters(args, people):
+    return [all_participants_covered_filter(people)]
 
 
 def filter_meeting_sets(meeting_sets, meeting_set_filters):
@@ -149,7 +149,7 @@ def parse_meetings(s):
     return meetings
 
 
-def parse_participants(csv_string):
+def parse_people(csv_string):
     meetings = []
     rows = csv_string.split('\n')
     rows = [r.split(',') for r in rows]
@@ -181,11 +181,11 @@ def max_start_filter(hour):
     return lambda m: m.datetime.hour <= hour
 
 
-def min_attendance_filter(n):
+def min_people_filter(n):
     return lambda m: len(m.those_who_can_attend) >= n
 
 
-def max_attendance_filter(n):
+def max_people_filter(n):
     return lambda m: len(m.those_who_can_attend) <= n
 
 
@@ -197,12 +197,16 @@ def max_facilitator_filter(n):
     return lambda m: len([x for x in m.those_who_can_attend if x[0] == '*']) <= n
 
 
-def all_participants_covered_filter(participants):
-    participants = set(filter(lambda p: p[0] != '*', participants))
-    return lambda ms: len(participants - participant_set(ms)) == 0
+def all_participants_covered_filter(people):
+    participants = filter_participants(people)
+    return lambda ms: len(participants - people_who_can_make_at_least_one_meeting_in(ms)) == 0
 
 
-def participant_set(meeting_set):
+def filter_participants(people):
+    return set(filter(lambda p: p[0] != '*', people))
+
+
+def people_who_can_make_at_least_one_meeting_in(meeting_set):
     ps = set()
     for m in meeting_set:
         ps |= set(m.those_who_can_attend)

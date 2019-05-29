@@ -52,7 +52,7 @@ class TestFilters(unittest.TestCase):
         meetings = list(filter(find_meetings.max_start_filter(6), meetings))
         self.assertListEqual(meetings, [four, five, six])
 
-    def test_filter_attendees_fewer(self):
+    def test_filter_people_fewer(self):
         meetings = [
             Meeting(None, [], []),
             Meeting(None, [1], [1]),
@@ -63,10 +63,10 @@ class TestFilters(unittest.TestCase):
         one = meetings[1]
         two = meetings[2]
         three = meetings[3]
-        meetings = list(filter(find_meetings.min_attendance_filter(2), meetings))
+        meetings = list(filter(find_meetings.min_people_filter(2), meetings))
         self.assertListEqual(meetings, [two, three])
 
-    def test_filter_attendees_greater(self):
+    def test_filter_people_greater(self):
         meetings = [
             Meeting(None, [], []),
             Meeting(None, [1], [1]),
@@ -77,5 +77,5 @@ class TestFilters(unittest.TestCase):
         one = meetings[1]
         two = meetings[2]
         three = meetings[3]
-        meetings = list(filter(find_meetings.max_attendance_filter(2), meetings))
+        meetings = list(filter(find_meetings.max_people_filter(2), meetings))
         self.assertListEqual(meetings, [zero, one, two])
