@@ -117,3 +117,35 @@ class TestFilters(unittest.TestCase):
         filter = find_meetings.MaxFacilitatorsFilter(1)
         meetings = filter.apply_and_count(meetings)
         self.assertListEqual(meetings, [zero_a, zero_b, one])
+
+
+    def test_min_participants_filter(self):
+        meetings = [
+            Meeting(None, [], []),
+            Meeting(None, ['*1'], ['*1']),
+            Meeting(None, ['*1', '2'], ['*1', '2']),
+            Meeting(None, ['*1', '2', '3'], ['*1', '2', '3']),
+        ]
+        zero_a = meetings[0]
+        zero_b = meetings[1]
+        one = meetings[2]
+        two = meetings[3]
+        filter = find_meetings.MinParticipantsFilter(1)
+        meetings = filter.apply_and_count(meetings)
+        self.assertListEqual(meetings, [one, two])
+
+
+    def test_max_participants_filter(self):
+        meetings = [
+            Meeting(None, [], []),
+            Meeting(None, ['*1'], ['*1']),
+            Meeting(None, ['*1', '2'], ['*1', '2']),
+            Meeting(None, ['*1', '2', '3'], ['*1', '2', '3']),
+        ]
+        zero_a = meetings[0]
+        zero_b = meetings[1]
+        one = meetings[2]
+        two = meetings[3]
+        filter = find_meetings.MaxParticipantsFilter(1)
+        meetings = filter.apply_and_count(meetings)
+        self.assertListEqual(meetings, [zero_a, zero_b, one])

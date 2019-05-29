@@ -66,6 +66,14 @@ def argparser():
         '--max-facilitators',
         type=int,
         help='Exclude meetings with more than the given number of facilitators.')
+    parser.add_argument(
+        '--min-participants',
+        type=int,
+        help='Exclude meetings with fewer than the given number of participants.')
+    parser.add_argument(
+        '--max-participants',
+        type=int,
+        help='Exclude meetings with more than the given number of participants.')
     return parser
 
 
@@ -90,6 +98,10 @@ def meeting_filters(args):
         filters.append(MinFacilitatorsFilter(args.min_facilitators))
     if args.max_facilitators:
         filters.append(MaxFacilitatorsFilter(args.max_facilitators))
+    if args.min_participants:
+        filters.append(MinParticipantsFilter(args.min_participants))
+    if args.max_participants:
+        filters.append(MaxParticipantsFilter(args.max_participants))
     return filters
 
 
@@ -183,8 +195,10 @@ class Meeting:
         self.people_who_can_attend = people_who_can_attend
         if self.people_who_can_attend is not None:
             self.facilitators_who_can_attend = [x for x in self.people_who_can_attend if x[0] == '*']
+            self.participants_who_can_attend = [x for x in self.people_who_can_attend if x[0] != '*']
         else:
             self.facilitators_who_can_attend = None
+            self.participants_who_can_attend = None
         self.people_who_can_attend_if_need_be = people_who_can_attend_if_need_be
 
     def __str__(self):
@@ -277,6 +291,22 @@ class MaxFacilitatorsFilter(Filter):
 
     def condition(self, meeting):
         return len(meeting.facilitators_who_can_attend) <= self.n
+
+
+class MinParticipantsFilter(Filter):
+    def __init__(self, n):
+        self.n = n
+
+    def condition(self, meeting):
+        return len(meeting.participants_who_can_attend) >= self.n
+
+
+class MaxParticipantsFilter(Filter):
+    def __init__(self, n):
+        self.n = n
+
+    def condition(self, meeting):
+        return len(meeting.participants_who_can_attend) <= self.n
 
 
 def ncr(n, r):
