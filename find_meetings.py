@@ -10,12 +10,12 @@ def main():
     doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
     meetings = parse_meetings(doodlepoll_csv_string, args.ignore_if_need_be)
     meetings = filter_meetings(meetings, meeting_filters(args))
+    print(ncr(len(meetings), args.k), 'candidates')
     if args.dry_run:
-        print(ncr(len(meetings), args.k), 'candidates')
-    else:
-        meeting_sets = generate_meeting_sets(meetings, args.k)
-        meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_people(doodlepoll_csv_string)))
-        print_meeting_sets(meeting_sets)
+        return
+    meeting_sets = generate_meeting_sets(meetings, args.k)
+    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_people(doodlepoll_csv_string)))
+    print_meeting_sets(meeting_sets)
 
 
 def argparser():
@@ -120,7 +120,7 @@ def generate_meeting_sets(meetings, k):
 
 
 def meeting_set_filters(args, people):
-    return [AllParticipantsCanAttendAtLeastOneFilter(participants(people))]
+    return [AllParticipantsCanAttendAtLeastOneMeetingFilter(participants(people))]
 
 
 def participants(people):
@@ -294,7 +294,7 @@ class MaxParticipantsFilter(Filter):
         return len(meeting.participants_who_can_attend) <= self.n
 
 
-class AllParticipantsCanAttendAtLeastOneFilter(Filter):
+class AllParticipantsCanAttendAtLeastOneMeetingFilter(Filter):
     def __init__(self, all_participants):
         self.all_participants = all_participants
 
