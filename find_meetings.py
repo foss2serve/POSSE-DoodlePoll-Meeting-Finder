@@ -8,7 +8,7 @@ from functools import reduce
 def main():
     args = argparser().parse_args()
     doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
-    meetings = parse_meetings(doodlepoll_csv_string)
+    meetings = parse_meetings(doodlepoll_csv_string, args.ignore_if_need_be)
     meetings = filter_meetings(meetings, meeting_filters(args))
     if args.dry_run:
         print(ncr(len(meetings), args.k), 'candidates')
@@ -34,6 +34,10 @@ def argparser():
         action='store_true',
         help='Just report filter counts and the number of candidates.'
     )
+    parser.add_argument(
+        '--ignore-if-need-be',
+        action='store_true',
+        help='Exclude "if-need-be" values.')
     parser.add_argument(
         '--weekday',
         action='store_true',
@@ -131,7 +135,7 @@ def print_meeting_sets(meeting_sets):
 DOODLEPOLL_TIME_SEPARATOR = ' – '
 
 
-def parse_meetings(s):
+def parse_meetings(s, ignore_if_need_be=False):
     meetings = []
     rows = s.split('\n')
     rows = [r.split(',') for r in rows]
@@ -156,6 +160,9 @@ def parse_meetings(s):
         for j in range(6, len(rows)-1):
             if rows[j][i] == '(OK)':
                 people_who_can_attend_if_need_be.append(rows[j][0])
+
+        if ignore_if_need_be:
+            people_who_can_attend = [p for p in people_who_can_attend if p not in people_who_can_attend_if_need_be]
 
         m = Meeting(dt, people_who_can_attend, people_who_can_attend_if_need_be)
         meetings.append(m)
