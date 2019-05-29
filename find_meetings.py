@@ -1,6 +1,7 @@
 import argparse
 from datetime import datetime
-from itertools import combinations
+from itertools import combinations, product
+from collections import Counter
 import operator as op
 from functools import reduce
 
@@ -10,7 +11,7 @@ def main():
     doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
     meetings = parse_meetings(doodlepoll_csv_string, args.ignore_if_need_be)
     meetings = filter_meetings(meetings, meeting_filters(args))
-    print(ncr(len(meetings), args.k), 'candidates')
+    print(f'There are {ncr(len(meetings), args.k)} {args.k}-meeting candidates')
     if args.dry_run:
         return
     meeting_sets = generate_meeting_sets(meetings, args.k)
@@ -78,6 +79,10 @@ def argparser():
         '--max-participants',
         type=int,
         help='Exclude meetings with more than the given number of participants.')
+    parser.add_argument(
+        '--max-facilitations',
+        type=int,
+        help='Exclude candidates where any one facilitator must facilitate more than the given number of meetings.')
     return parser
 
 
@@ -110,6 +115,7 @@ def meeting_filters(args):
 
 
 def filter_meetings(meetings, meeting_filters):
+    print("APPLYING MEETING FILTERS")
     for f in meeting_filters:
         meetings = f.apply_and_count(meetings)
         print(f)
@@ -121,7 +127,11 @@ def generate_meeting_sets(meetings, k):
 
 
 def meeting_set_filters(args, people):
-    return [AllParticipantsCanAttendAtLeastOneMeetingFilter(participants(people))]
+    filters = []
+    filters.append(AllParticipantsCanAttendAtLeastOneMeetingFilter(participants(people)))
+    if args.max_facilitations:
+        filters.append(MaxFacilitationsFilter(args.min_facilitators, args.max_facilitations))
+    return filters
 
 
 def participants(people):
@@ -129,9 +139,11 @@ def participants(people):
 
 
 def filter_meeting_sets(meeting_sets, meeting_set_filters):
+    print("APPLYING CANDIDATE FILTERS")
     meeting_sets = list(meeting_sets)
     for f in meeting_set_filters:
         meeting_sets = f.apply_and_count(meeting_sets)
+        print(f)
     return meeting_sets
 
 
@@ -223,7 +235,7 @@ class Filter:
             name = self.name
         else:
             name = type(self).__name__
-        return f'{name}: in={self.count_in} out={self.count_out} filtered={self.count_in-self.count_out}'
+        return f'{name}:  in={self.count_in}, filtered={self.count_in-self.count_out}, out={self.count_out}'
 
 
 class WeekdayFilter(Filter):
@@ -234,6 +246,7 @@ class WeekdayFilter(Filter):
 class MinStartFilter(Filter):
     def __init__(self, hour):
         self.hour = hour
+        self.name = f'MinStartFilter({hour})'
 
     def condition(self, meeting):
         return meeting.datetime.hour >= self.hour
@@ -242,6 +255,7 @@ class MinStartFilter(Filter):
 class MaxStartFilter(Filter):
     def __init__(self, hour):
         self.hour = hour
+        self.name = f'MaxStartFilter({hour})'
 
     def condition(self, meeting):
         return meeting.datetime.hour <= self.hour
@@ -250,6 +264,7 @@ class MaxStartFilter(Filter):
 class MinPeopleFilter(Filter):
     def __init__(self, n):
         self.n = n
+        self.name = f'MinPeopleFilter({n})'
 
     def condition(self, meeting):
         return len(meeting.people_who_can_attend) >= self.n
@@ -258,6 +273,7 @@ class MinPeopleFilter(Filter):
 class MaxPeopleFilter(Filter):
     def __init__(self, n):
         self.n = n
+        self.name = f'MaxPeopleFilter({n})'
 
     def condition(self, meeting):
         return len(meeting.people_who_can_attend) <= self.n
@@ -266,6 +282,7 @@ class MaxPeopleFilter(Filter):
 class MinFacilitatorsFilter(Filter):
     def __init__(self, n):
         self.n = n
+        self.name = f'MinFacilitatorsFilter({n})'
 
     def condition(self, meeting):
         return len(meeting.facilitators_who_can_attend) >= self.n
@@ -274,6 +291,7 @@ class MinFacilitatorsFilter(Filter):
 class MaxFacilitatorsFilter(Filter):
     def __init__(self, n):
         self.n = n
+        self.name = f'MaxFacilitatorsFilter({n})'
 
     def condition(self, meeting):
         return len(meeting.facilitators_who_can_attend) <= self.n
@@ -282,6 +300,7 @@ class MaxFacilitatorsFilter(Filter):
 class MinParticipantsFilter(Filter):
     def __init__(self, n):
         self.n = n
+        self.name = f'MinParticipantsFilter({n})'
 
     def condition(self, meeting):
         return len(meeting.participants_who_can_attend) >= self.n
@@ -290,6 +309,7 @@ class MinParticipantsFilter(Filter):
 class MaxParticipantsFilter(Filter):
     def __init__(self, n):
         self.n = n
+        self.name = f'MaxParticipantsFilter({n})'
 
     def condition(self, meeting):
         return len(meeting.participants_who_can_attend) <= self.n
@@ -306,6 +326,24 @@ class AllParticipantsCanAttendAtLeastOneMeetingFilter(Filter):
                 if p in unaccounted:
                     unaccounted.remove(p)
         return len(unaccounted) == 0
+
+
+class MaxFacilitationsFilter(Filter):
+    def __init__(self, min_facilitators, max_facilitations):
+        self.max_facilitations = max_facilitations
+        self.min_facilitators = min_facilitators
+        self.name = f'MaxFacilitationsFilter(min_facilitators={min_facilitators}, max_facilitations={max_facilitations})'
+
+    def condition(self, meeting_set):
+        each_meetings_minimum_facilitator_combinations = []
+        for m in meeting_set:
+            c = combinations(m.facilitators_who_can_attend, self.min_facilitators)
+            each_meetings_minimum_facilitator_combinations.append(c)
+        for configuration in product(*each_meetings_minimum_facilitator_combinations):
+            c = Counter([f for meeting_facilitators in configuration for f in meeting_facilitators])
+            if all(v <= self.max_facilitations for v in c.values()):
+                return True
+        return False
 
 
 def ncr(n, r):
