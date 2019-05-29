@@ -53,6 +53,7 @@ def argparser():
     parser.add_argument(
         '--min-people',
         type=int,
+        default=2,
         help='Exclude meetings with fewer than the given number of people who can attend.')
     parser.add_argument(
         '--max-people',
@@ -61,6 +62,7 @@ def argparser():
     parser.add_argument(
         '--min-facilitators',
         type=int,
+        default=1,
         help='Exclude meetings with fewer than the given number of facilitators.')
     parser.add_argument(
         '--max-facilitators',
@@ -69,6 +71,7 @@ def argparser():
     parser.add_argument(
         '--min-participants',
         type=int,
+        default=1,
         help='Exclude meetings with fewer than the given number of participants.')
     parser.add_argument(
         '--max-participants',
@@ -106,15 +109,9 @@ def meeting_filters(args):
 
 
 def filter_meetings(meetings, meeting_filters):
-    print(len(meetings))
     for f in meeting_filters:
-        if isinstance(f, Filter):
-            meetings = f.apply_and_count(meetings)
-            print(f)
-        else:
-            print('Applying', f)
-            meetings = list(filter(f, meetings))
-            print(len(meetings))
+        meetings = f.apply_and_count(meetings)
+        print(f)
     return meetings
 
 
@@ -123,13 +120,17 @@ def generate_meeting_sets(meetings, k):
 
 
 def meeting_set_filters(args, people):
-    return [all_participants_covered_filter(people)]
+    return [AllParticipantsCanAttendAtLeastOneFilter(participants(people))]
+
+
+def participants(people):
+    return [p for p in people if p[0] != '*']
 
 
 def filter_meeting_sets(meeting_sets, meeting_set_filters):
     meeting_sets = list(meeting_sets)
     for f in meeting_set_filters:
-        meeting_sets = list(filter(f, meeting_sets))
+        meeting_sets = f.apply_and_count(meeting_sets)
     return meeting_sets
 
 
@@ -206,22 +207,6 @@ class Meeting:
         for a in self.people_who_can_attend:
             s.append(f'{a}')
         return '\n    '.join(s)
-
-
-def all_participants_covered_filter(people):
-    participants = filter_participants(people)
-    return lambda ms: len(participants - people_who_can_make_at_least_one_meeting_in(ms)) == 0
-
-
-def filter_participants(people):
-    return set(filter(lambda p: p[0] != '*', people))
-
-
-def people_who_can_make_at_least_one_meeting_in(meeting_set):
-    ps = set()
-    for m in meeting_set:
-        ps |= set(m.people_who_can_attend)
-    return ps
 
 
 class Filter:
@@ -307,6 +292,19 @@ class MaxParticipantsFilter(Filter):
 
     def condition(self, meeting):
         return len(meeting.participants_who_can_attend) <= self.n
+
+
+class AllParticipantsCanAttendAtLeastOneFilter(Filter):
+    def __init__(self, all_participants):
+        self.all_participants = all_participants
+
+    def condition(self, meeting_set):
+        unaccounted = set(self.all_participants)
+        for m in meeting_set:
+            for p in m.participants_who_can_attend:
+                if p in unaccounted:
+                    unaccounted.remove(p)
+        return len(unaccounted) == 0
 
 
 def ncr(n, r):
