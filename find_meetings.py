@@ -14,7 +14,8 @@ def main():
     if args.dry_run:
         return
     meeting_sets = generate_meeting_sets(meetings, args.k)
-    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_people(doodlepoll_csv_string)))
+    people = parse_people(doodlepoll_csv_string)
+    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, people))
     print_meeting_sets(meeting_sets)
 
 
