@@ -17,7 +17,8 @@ class TestFilters(unittest.TestCase):
         meetings = [Meeting(datetime.strptime(m, '%m/%d/%Y'), None, None) for m in meetings]
         sat = meetings[-2]
         sun = meetings[-1]
-        meetings = list(filter(find_meetings.weekday_filter(), meetings))
+        filter = find_meetings.WeekdayFilter()
+        meetings = filter.apply_and_count(meetings)
         self.assertTrue(sat not in meetings)
         self.assertTrue(sun not in meetings)
         self.assertEqual(len(meetings), 5)

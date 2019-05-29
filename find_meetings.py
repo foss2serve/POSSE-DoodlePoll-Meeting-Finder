@@ -63,7 +63,7 @@ def load_file(filepath):
 def meeting_filters(args):
     filters = []
     if args.weekday:
-        filters.append(weekday_filter())
+        filters.append(WeekdayFilter())
     if args.min_start:
         filters.append(min_start_filter(args.min_start))
     if args.max_start:
@@ -82,9 +82,13 @@ def meeting_filters(args):
 def filter_meetings(meetings, meeting_filters):
     print(len(meetings))
     for f in meeting_filters:
-        print('Applying', f)
-        meetings = list(filter(f, meetings))
-        print(len(meetings))
+        if isinstance(f, Filter):
+            meetings = f.apply_and_count(meetings)
+            print(f)
+        else:
+            print('Applying', f)
+            meetings = list(filter(f, meetings))
+            print(len(meetings))
     return meetings
 
 
@@ -169,10 +173,6 @@ class Meeting:
         return '\n    '.join(s)
 
 
-def weekday_filter():
-    return lambda m: m.datetime.weekday() < 5
-
-
 def min_start_filter(hour):
     return lambda m: m.datetime.hour >= hour
 
@@ -211,6 +211,37 @@ def people_who_can_make_at_least_one_meeting_in(meeting_set):
     for m in meeting_set:
         ps |= set(m.those_who_can_attend)
     return ps
+
+
+class Filter:
+    def __init__(self):
+        self.name = type(self).__name__
+        self.count_in = None
+        self.count_out = None
+
+    def apply_and_count(self, items):
+        self.count_in = len(items)
+        items = self.filter(items)
+        self.count_out = len(items)
+        self.filtered = self.count_in - self.count_out
+        return items
+
+    def __str__(self):
+        return f'{self.name}: in={self.count_in} out={self.count_out} filtered={self.count_in-self.count_out}'
+
+
+class WeekdayFilter(Filter):
+    def __init__(self):
+        super().__init__()
+
+    def filter(self, meetings):
+        return list(filter(weekday_filter_fn, meetings))
+
+
+def weekday_filter_fn(meeting):
+    return meeting.datetime.weekday() < 5
+
+
 
 
 if __name__ == '__main__':
