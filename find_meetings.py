@@ -67,15 +67,15 @@ def meeting_filters(args):
     if args.min_start:
         filters.append(MinStartFilter(args.min_start))
     if args.max_start:
-        filters.append(max_start_filter(args.max_start))
+        filters.append(MaxStartFilter(args.max_start))
     if args.min_people:
-        filters.append(min_people_filter(args.min_people))
+        filters.append(MinPeopleFilter(args.min_people))
     if args.max_people:
-        filters.append(max_people_filter(args.max_people))
+        filters.append(MaxPeopleFilter(args.max_people))
     if args.min_facilitators:
-        filters.append(min_facilitator_filter(args.min_facilitators))
+        filters.append(MinFacilitatorsFilter(args.min_facilitators))
     if args.max_facilitators:
-        filters.append(max_facilitator_filter(args.max_facilitators))
+        filters.append(MaxFacilitatorsFilter(args.max_facilitators))
     return filters
 
 
@@ -137,17 +137,17 @@ def parse_meetings(s):
             start_time = time.split(DOODLEPOLL_TIME_SEPARATOR)[0]
         dt = datetime.strptime(f'{month_year} {date} {start_time}', '%b %Y %d %I:%M %p')
 
-        those_who_can_attend = []
+        people_who_can_attend = []
         for j in range(6, len(rows)-1):
             if rows[j][i]:
-                those_who_can_attend.append(rows[j][0])
+                people_who_can_attend.append(rows[j][0])
 
-        those_who_can_attend_if_need_be = []
+        people_who_can_attend_if_need_be = []
         for j in range(6, len(rows)-1):
             if rows[j][i] == '(OK)':
-                those_who_can_attend_if_need_be.append(rows[j][0])
+                people_who_can_attend_if_need_be.append(rows[j][0])
 
-        m = Meeting(dt, those_who_can_attend, those_who_can_attend_if_need_be)
+        m = Meeting(dt, people_who_can_attend, people_who_can_attend_if_need_be)
         meetings.append(m)
 
     return meetings
@@ -161,36 +161,20 @@ def parse_people(csv_string):
 
 
 class Meeting:
-    def __init__(self, datetime, those_who_can_attend, those_who_can_attend_if_need_be):
+    def __init__(self, datetime, people_who_can_attend, people_who_can_attend_if_need_be):
         self.datetime = datetime
-        self.those_who_can_attend = those_who_can_attend
-        self.those_who_can_attend_if_need_be = those_who_can_attend_if_need_be
+        self.people_who_can_attend = people_who_can_attend
+        if self.people_who_can_attend is not None:
+            self.facilitators_who_can_attend = [x for x in self.people_who_can_attend if x[0] == '*']
+        else:
+            self.facilitators_who_can_attend = None
+        self.people_who_can_attend_if_need_be = people_who_can_attend_if_need_be
 
     def __str__(self):
         s = [self.datetime.strftime('%c')]
-        for a in self.those_who_can_attend:
+        for a in self.people_who_can_attend:
             s.append(f'{a}')
         return '\n    '.join(s)
-
-
-def max_start_filter(hour):
-    return lambda m: m.datetime.hour <= hour
-
-
-def min_people_filter(n):
-    return lambda m: len(m.those_who_can_attend) >= n
-
-
-def max_people_filter(n):
-    return lambda m: len(m.those_who_can_attend) <= n
-
-
-def min_facilitator_filter(n):
-    return lambda m: len([x for x in m.those_who_can_attend if x[0] == '*']) >= n
-
-
-def max_facilitator_filter(n):
-    return lambda m: len([x for x in m.those_who_can_attend if x[0] == '*']) <= n
 
 
 def all_participants_covered_filter(people):
@@ -205,7 +189,7 @@ def filter_participants(people):
 def people_who_can_make_at_least_one_meeting_in(meeting_set):
     ps = set()
     for m in meeting_set:
-        ps |= set(m.those_who_can_attend)
+        ps |= set(m.people_who_can_attend)
     return ps
 
 
@@ -236,6 +220,46 @@ class MinStartFilter(Filter):
 
     def condition(self, meeting):
         return meeting.datetime.hour >= self.hour
+
+
+class MaxStartFilter(Filter):
+    def __init__(self, hour):
+        self.hour = hour
+
+    def condition(self, meeting):
+        return meeting.datetime.hour <= self.hour
+
+
+class MinPeopleFilter(Filter):
+    def __init__(self, n):
+        self.n = n
+
+    def condition(self, meeting):
+        return len(meeting.people_who_can_attend) >= self.n
+
+
+class MaxPeopleFilter(Filter):
+    def __init__(self, n):
+        self.n = n
+
+    def condition(self, meeting):
+        return len(meeting.people_who_can_attend) <= self.n
+
+
+class MinFacilitatorsFilter(Filter):
+    def __init__(self, n):
+        self.n = n
+
+    def condition(self, meeting):
+        return len(meeting.facilitators_who_can_attend) >= self.n
+
+
+class MaxFacilitatorsFilter(Filter):
+    def __init__(self, n):
+        self.n = n
+
+    def condition(self, meeting):
+        return len(meeting.facilitators_who_can_attend) <= self.n
 
 
 if __name__ == '__main__':

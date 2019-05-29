@@ -47,26 +47,26 @@ class TestParsing(unittest.TestCase):
             datetime.strptime('May 2019 21 12:00 PM', '%b %Y %d %I:%M %p')
         )
 
-    def test_meetings_have_names_of_those_who_can_attend(self):
+    def test_meetings_have_names_of_people_who_can_attend(self):
         self.assertListEqual(
-            self.parsed_meetings[0].those_who_can_attend,
+            self.parsed_meetings[0].people_who_can_attend,
             [
                 'Facilitator 1',
                 'Participant 1'
             ]
         )
 
-    def test_meetings_have_names_of_those_who_can_attend_if_need_be(self):
+    def test_meetings_have_names_of_people_who_can_attend_if_need_be(self):
         self.assertListEqual(
-            self.parsed_meetings[1].those_who_can_attend_if_need_be,
+            self.parsed_meetings[1].people_who_can_attend_if_need_be,
             [
                 'Facilitator 1',
                 'Participant 1'
             ]
         )
 
-    def test_if_need_be_is_a_subset_of_those_who_can_attend(self):
+    def test_if_need_be_is_a_subset_of_people_who_can_attend(self):
         for m in self.parsed_meetings:
             self.assertTrue(
-                all(x in m.those_who_can_attend for x in m.those_who_can_attend_if_need_be)
+                all(x in m.people_who_can_attend for x in m.people_who_can_attend_if_need_be)
             )

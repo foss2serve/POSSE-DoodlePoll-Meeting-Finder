@@ -39,7 +39,7 @@ class TestFilters(unittest.TestCase):
         meetings = filter.apply_and_count(meetings)
         self.assertListEqual(meetings, [six, seven])
 
-    def test_filter_after(self):
+    def test_max_start_filter(self):
         meetings = [
             '4',
             '5',
@@ -51,33 +51,68 @@ class TestFilters(unittest.TestCase):
         five = meetings[1]
         six = meetings[2]
         seven = meetings[3]
-        meetings = list(filter(find_meetings.max_start_filter(6), meetings))
+        filter = find_meetings.MaxStartFilter(6)
+        meetings = filter.apply_and_count(meetings)
         self.assertListEqual(meetings, [four, five, six])
 
-    def test_filter_people_fewer(self):
+    def test_min_people_filter(self):
         meetings = [
             Meeting(None, [], []),
-            Meeting(None, [1], [1]),
-            Meeting(None, [1, 2], [1, 2]),
-            Meeting(None, [1, 2, 3], [1, 2, 3]),
+            Meeting(None, ['1'], ['1']),
+            Meeting(None, ['1', '2'], ['1', '2']),
+            Meeting(None, ['1', '2', '3'], ['1', '2', '3']),
         ]
         zero = meetings[0]
         one = meetings[1]
         two = meetings[2]
         three = meetings[3]
-        meetings = list(filter(find_meetings.min_people_filter(2), meetings))
+        filter = find_meetings.MinPeopleFilter(2)
+        meetings = filter.apply_and_count(meetings)
         self.assertListEqual(meetings, [two, three])
 
-    def test_filter_people_greater(self):
+    def test_max_people_filter(self):
         meetings = [
             Meeting(None, [], []),
-            Meeting(None, [1], [1]),
-            Meeting(None, [1, 2], [1, 2]),
-            Meeting(None, [1, 2, 3], [1, 2, 3]),
+            Meeting(None, ['1'], ['1']),
+            Meeting(None, ['1', '2'], ['1', '2']),
+            Meeting(None, ['1', '2', '3'], ['1', '2', '3']),
         ]
         zero = meetings[0]
         one = meetings[1]
         two = meetings[2]
         three = meetings[3]
-        meetings = list(filter(find_meetings.max_people_filter(2), meetings))
+        filter = find_meetings.MaxPeopleFilter(2)
+        meetings = filter.apply_and_count(meetings)
         self.assertListEqual(meetings, [zero, one, two])
+
+
+    def test_min_facilitators_filter(self):
+        meetings = [
+            Meeting(None, [], []),
+            Meeting(None, ['1'], ['1']),
+            Meeting(None, ['1', '*2'], ['1', '*2']),
+            Meeting(None, ['1', '*2', '*3'], ['1', '*2', '*3']),
+        ]
+        zero_a = meetings[0]
+        zero_b = meetings[1]
+        one = meetings[2]
+        two = meetings[3]
+        filter = find_meetings.MinFacilitatorsFilter(1)
+        meetings = filter.apply_and_count(meetings)
+        self.assertListEqual(meetings, [one, two])
+
+
+    def test_max_facilitators_filter(self):
+        meetings = [
+            Meeting(None, [], []),
+            Meeting(None, ['1'], ['1']),
+            Meeting(None, ['1', '*2'], ['1', '*2']),
+            Meeting(None, ['1', '*2', '*3'], ['1', '*2', '*3']),
+        ]
+        zero_a = meetings[0]
+        zero_b = meetings[1]
+        one = meetings[2]
+        two = meetings[3]
+        filter = find_meetings.MaxFacilitatorsFilter(1)
+        meetings = filter.apply_and_count(meetings)
+        self.assertListEqual(meetings, [zero_a, zero_b, one])
