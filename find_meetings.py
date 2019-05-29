@@ -65,7 +65,7 @@ def meeting_filters(args):
     if args.weekday:
         filters.append(WeekdayFilter())
     if args.min_start:
-        filters.append(min_start_filter(args.min_start))
+        filters.append(MinStartFilter(args.min_start))
     if args.max_start:
         filters.append(max_start_filter(args.max_start))
     if args.min_people:
@@ -173,10 +173,6 @@ class Meeting:
         return '\n    '.join(s)
 
 
-def min_start_filter(hour):
-    return lambda m: m.datetime.hour >= hour
-
-
 def max_start_filter(hour):
     return lambda m: m.datetime.hour <= hour
 
@@ -214,34 +210,32 @@ def people_who_can_make_at_least_one_meeting_in(meeting_set):
 
 
 class Filter:
-    def __init__(self):
-        self.name = type(self).__name__
-        self.count_in = None
-        self.count_out = None
-
     def apply_and_count(self, items):
         self.count_in = len(items)
-        items = self.filter(items)
+        items = list(filter(self.condition, items))
         self.count_out = len(items)
         self.filtered = self.count_in - self.count_out
         return items
 
     def __str__(self):
-        return f'{self.name}: in={self.count_in} out={self.count_out} filtered={self.count_in-self.count_out}'
+        if hasattr(self, 'name'):
+            name = self.name
+        else:
+            name = type(self).__name__
+        return f'{name}: in={self.count_in} out={self.count_out} filtered={self.count_in-self.count_out}'
 
 
 class WeekdayFilter(Filter):
-    def __init__(self):
-        super().__init__()
-
-    def filter(self, meetings):
-        return list(filter(weekday_filter_fn, meetings))
+    def condition(self, meeting):
+        return meeting.datetime.weekday() < 5
 
 
-def weekday_filter_fn(meeting):
-    return meeting.datetime.weekday() < 5
+class MinStartFilter(Filter):
+    def __init__(self, hour):
+        self.hour = hour
 
-
+    def condition(self, meeting):
+        return meeting.datetime.hour >= self.hour
 
 
 if __name__ == '__main__':

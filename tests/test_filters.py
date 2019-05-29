@@ -23,7 +23,7 @@ class TestFilters(unittest.TestCase):
         self.assertTrue(sun not in meetings)
         self.assertEqual(len(meetings), 5)
 
-    def test_filter_before(self):
+    def test_min_start_filter(self):
         meetings = [
             '4',
             '5',
@@ -35,7 +35,8 @@ class TestFilters(unittest.TestCase):
         five = meetings[1]
         six = meetings[2]
         seven = meetings[3]
-        meetings = list(filter(find_meetings.min_start_filter(6), meetings))
+        filter = find_meetings.MinStartFilter(6)
+        meetings = filter.apply_and_count(meetings)
         self.assertListEqual(meetings, [six, seven])
 
     def test_filter_after(self):
