@@ -1,6 +1,8 @@
 import argparse
 from datetime import datetime
 from itertools import combinations
+import operator as op
+from functools import reduce
 
 
 def main():
@@ -8,9 +10,12 @@ def main():
     doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
     meetings = parse_meetings(doodlepoll_csv_string)
     meetings = filter_meetings(meetings, meeting_filters(args))
-    meeting_sets = generate_meeting_sets(meetings, args.k)
-    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_people(doodlepoll_csv_string)))
-    print_meeting_sets(meeting_sets)
+    if args.dry_run:
+        print(ncr(len(meetings), args.k), 'candidates')
+    else:
+        meeting_sets = generate_meeting_sets(meetings, args.k)
+        meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, parse_people(doodlepoll_csv_string)))
+        print_meeting_sets(meeting_sets)
 
 
 def argparser():
@@ -23,6 +28,11 @@ def argparser():
         'k',
         type=int,
         help='Number of meetings in a solution.'
+    )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Just report filter counts and the number of candidates.'
     )
     parser.add_argument(
         '--weekday',
@@ -260,6 +270,13 @@ class MaxFacilitatorsFilter(Filter):
 
     def condition(self, meeting):
         return len(meeting.facilitators_who_can_attend) <= self.n
+
+
+def ncr(n, r):
+    r = min(r, n-r)
+    numer = reduce(op.mul, range(n, n-r, -1), 1)
+    denom = reduce(op.mul, range(1, r+1), 1)
+    return numer // denom
 
 
 if __name__ == '__main__':

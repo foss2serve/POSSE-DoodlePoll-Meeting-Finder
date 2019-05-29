@@ -3,6 +3,7 @@ from datetime import datetime
 import find_meetings
 from find_meetings import Meeting
 
+
 class TestFilters(unittest.TestCase):
     def test_filter_weekend(self):
         meetings = [
