@@ -10,11 +10,10 @@ import sys
 def main():
     args = get_commandline_arguments()
     path_to_csv_file = args.doodlepoll_csv_filepath
-    if args.ignore_if_need_be:
+    if_need_be_yes = True
+    if args.treat_if_need_be_as_no:
+        print("Treating if-need-be responses as No.")
         if_need_be_yes = False
-        print("Ignoring if-need-be.")
-    else:
-        if_need_be_yes = True
     doodle_poll = DoodlePoll.from_csv_file(path_to_csv_file, if_need_be_yes)
     meetings = doodle_poll.get_meetings()
     meetings = list(meetings)
@@ -45,9 +44,9 @@ def get_commandline_arguments():
         action='store_true',
         help='Just report filter counts and the number of candidates.')
     parser.add_argument(
-        '--ignore-if-need-be',
+        '--treat-if-need-be-as-no',
         action='store_true',
-        help='Exclude "if-need-be" values.')
+        help='If set, if-need-be responses will be considered No responses.')
     parser.add_argument(
         '--weekday',
         action='store_true',
