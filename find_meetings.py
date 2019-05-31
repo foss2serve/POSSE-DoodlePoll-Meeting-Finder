@@ -20,9 +20,9 @@ def main():
     filters = get_meeting_filters(args)
     meetings = list(apply_filters(filters, meetings))
     print_filter_status(filters)
-    calculate_and_print_number_of_candidates(len(meetings), args.k)
+    calculate_and_print_number_of_candidates(len(meetings), args.meetings_per_solution)
     halt_if(args.dry_run)
-    meeting_sets = generate_meeting_sets(meetings, args.k)
+    meeting_sets = generate_meeting_sets(meetings, args.meetings_per_solution)
     meeting_set_filters = get_meeting_set_filters(args, doodle_poll)
     meeting_sets = apply_filters(meeting_set_filters, meeting_sets)
     print_meeting_sets(meeting_sets)
@@ -36,8 +36,9 @@ def get_commandline_arguments():
         type=str,
         help='Location of the doodlepoll csv file.')
     parser.add_argument(
-        'k',
+        '--meetings-per-solution',
         type=int,
+        default=1,
         help='Number of meetings in a solution.')
     parser.add_argument(
         '--dry-run',
