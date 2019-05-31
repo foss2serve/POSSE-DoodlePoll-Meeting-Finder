@@ -4,23 +4,26 @@ from itertools import combinations, product
 from collections import Counter
 import operator as op
 from functools import reduce
+import sys
 
 
 def main():
-    args = argparser().parse_args()
+    args = get_commandline_arguments()
     doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
     meetings = parse_meetings(doodlepoll_csv_string, args.ignore_if_need_be)
-    meetings = filter_meetings(meetings, meeting_filters(args))
-    print(f'There are {ncr(len(meetings), args.k)} {args.k}-meeting candidates')
-    if args.dry_run:
-        return
+    meeting_filters = get_meeting_filters(args)
+    meetings = list(apply_filters(meeting_filters, meetings))
+    print_filter_status(meeting_filters)
+    calculate_and_print_number_of_candidates(len(meetings), args.k)
+    halt_if(args.dry_run)
     meeting_sets = generate_meeting_sets(meetings, args.k)
     people = parse_people(doodlepoll_csv_string)
-    meeting_sets = filter_meeting_sets(meeting_sets, meeting_set_filters(args, people))
+    meeting_set_filters = get_meeting_set_filters(args, people)
+    meeting_sets = apply_filters(meeting_set_filters, meeting_sets)
     print_meeting_sets(meeting_sets)
 
 
-def argparser():
+def get_commandline_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'doodlepoll_csv_filepath',
@@ -83,7 +86,7 @@ def argparser():
         '--max-facilitations',
         type=int,
         help='Exclude candidates where any one facilitator must facilitate more than the given number of meetings.')
-    return parser
+    return parser.parse_args()
 
 
 def load_file(filepath):
@@ -91,7 +94,7 @@ def load_file(filepath):
         return f.read()
 
 
-def meeting_filters(args):
+def get_meeting_filters(args):
     filters = []
     if args.weekday:
         filters.append(WeekdayFilter())
@@ -114,19 +117,34 @@ def meeting_filters(args):
     return filters
 
 
-def filter_meetings(meetings, meeting_filters):
-    print("APPLYING MEETING FILTERS")
-    for f in meeting_filters:
-        meetings = f.apply_and_count(meetings)
+def apply_filters(filters, items):
+    for f in filters:
+        items = f.apply(items)
+    return items
+
+
+def print_filter_status(filters):
+    for f in filters:
         print(f)
-    return meetings
+
+
+def calculate_and_print_number_of_candidates(number_of_meetings, meetings_per_candidate):
+    n = number_of_meetings
+    k = meetings_per_candidate
+    total = ncr(n, k)
+    print(f'There are {total} {k}-meeting candidates')
+
+
+def halt_if(c):
+    if c:
+        sys.exit(0)
 
 
 def generate_meeting_sets(meetings, k):
     return combinations(meetings, k)
 
 
-def meeting_set_filters(args, people):
+def get_meeting_set_filters(args, people):
     filters = []
     filters.append(AllParticipantsCanAttendAtLeastOneMeetingFilter(participants(people)))
     if args.max_facilitations:
@@ -138,17 +156,7 @@ def participants(people):
     return [p for p in people if p[0] != '*']
 
 
-def filter_meeting_sets(meeting_sets, meeting_set_filters):
-    print("APPLYING CANDIDATE FILTERS")
-    meeting_sets = list(meeting_sets)
-    for f in meeting_set_filters:
-        meeting_sets = f.apply_and_count(meeting_sets)
-        print(f)
-    return meeting_sets
-
-
 def print_meeting_sets(meeting_sets):
-    meeting_sets = list(meeting_sets)
     for i, ms in enumerate(meeting_sets, 1):
         print(f'========= Solution {i} =============')
         for m in ms:
@@ -223,6 +231,23 @@ class Meeting:
 
 
 class Filter:
+    def apply(self, items):
+        self.success_count = 0
+        self.fail_count = 0
+        self.count_in = 0
+        self.count_out = 0
+        return filter(self.counting_condition, items)
+
+    def counting_condition(self, item):
+        self.count_in += 1
+        if self.condition(item):
+            self.success_count += 1
+            self.count_out += 1
+            return True
+        else:
+            self.fail_count += 1
+            return False
+
     def apply_and_count(self, items):
         self.count_in = len(items)
         items = list(filter(self.condition, items))
