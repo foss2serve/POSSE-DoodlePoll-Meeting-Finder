@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime
+import types
 
 # system under test
 import find_meetings
@@ -22,10 +23,11 @@ Count,the,counts,can,be,reproduced,placeholder'''
 
 class TestParsing(unittest.TestCase):
     def setUp(self):
-        self.parsed_meetings = find_meetings.parse_meetings(DOODLEPOLL_CSV_STRING)
+        self.doodle_poll = find_meetings.DoodlePoll.from_csv_string(DOODLEPOLL_CSV_STRING)
+        self.parsed_meetings = self.doodle_poll.get_meetings()
 
-    def test_parse_into_a_list(self):
-        self.assertTrue(isinstance(self.parsed_meetings, list))
+    def test_parse_into_a_generator(self):
+        self.assertTrue(isinstance(self.parsed_meetings, types.GeneratorType))
 
     def test_elements_are_meetings(self):
         self.assertTrue(all(isinstance(m, find_meetings.Meeting) for m in self.parsed_meetings))
@@ -34,39 +36,25 @@ class TestParsing(unittest.TestCase):
         self.assertTrue(all(isinstance(m.datetime, datetime) for m in self.parsed_meetings))
 
     def test_meetings_datetimes_are_joined_from_rows_3_to_5(self):
+        meetings = list(self.parsed_meetings)
         self.assertEqual(
-            self.parsed_meetings[0].datetime,
+            meetings[0].datetime,
             datetime.strptime('May 2019 20 11:00 AM', '%b %Y %d %I:%M %p')
         )
         self.assertEqual(
-            self.parsed_meetings[1].datetime,
+            meetings[1].datetime,
             datetime.strptime('May 2019 20 12:00 PM', '%b %Y %d %I:%M %p')
         )
         self.assertEqual(
-            self.parsed_meetings[4].datetime,
+            meetings[4].datetime,
             datetime.strptime('May 2019 21 12:00 PM', '%b %Y %d %I:%M %p')
         )
 
     def test_meetings_have_names_of_people_who_can_attend(self):
         self.assertListEqual(
-            self.parsed_meetings[0].people_who_can_attend,
+            list(list(self.parsed_meetings)[0].get_people_who_can_attend()),
             [
-                'Facilitator 1',
-                'Participant 1'
+                find_meetings.Participant('Facilitator 1'),
+                find_meetings.Participant('Participant 1')
             ]
         )
-
-    def test_meetings_have_names_of_people_who_can_attend_if_need_be(self):
-        self.assertListEqual(
-            self.parsed_meetings[1].people_who_can_attend_if_need_be,
-            [
-                'Facilitator 1',
-                'Participant 1'
-            ]
-        )
-
-    def test_if_need_be_is_a_subset_of_people_who_can_attend(self):
-        for m in self.parsed_meetings:
-            self.assertTrue(
-                all(x in m.people_who_can_attend for x in m.people_who_can_attend_if_need_be)
-            )

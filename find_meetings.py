@@ -9,18 +9,25 @@ import sys
 
 def main():
     args = get_commandline_arguments()
-    doodlepoll_csv_string = load_file(args.doodlepoll_csv_filepath)
-    meetings = parse_meetings(doodlepoll_csv_string, args.ignore_if_need_be)
-    meeting_filters = get_meeting_filters(args)
-    meetings = list(apply_filters(meeting_filters, meetings))
-    print_filter_status(meeting_filters)
+    path_to_csv_file = args.doodlepoll_csv_filepath
+    if args.ignore_if_need_be:
+        if_need_be_yes = False
+        print("Ignoring if-need-be.")
+    else:
+        if_need_be_yes = True
+    doodle_poll = DoodlePoll.from_csv_file(path_to_csv_file, if_need_be_yes)
+    meetings = doodle_poll.get_meetings()
+    meetings = list(meetings)
+    filters = get_meeting_filters(args)
+    meetings = list(apply_filters(filters, meetings))
+    print_filter_status(filters)
     calculate_and_print_number_of_candidates(len(meetings), args.k)
     halt_if(args.dry_run)
     meeting_sets = generate_meeting_sets(meetings, args.k)
-    people = parse_people(doodlepoll_csv_string)
-    meeting_set_filters = get_meeting_set_filters(args, people)
+    meeting_set_filters = get_meeting_set_filters(args, doodle_poll)
     meeting_sets = apply_filters(meeting_set_filters, meeting_sets)
     print_meeting_sets(meeting_sets)
+    print_filter_status(meeting_set_filters)
 
 
 def get_commandline_arguments():
@@ -32,13 +39,11 @@ def get_commandline_arguments():
     parser.add_argument(
         'k',
         type=int,
-        help='Number of meetings in a solution.'
-    )
+        help='Number of meetings in a solution.')
     parser.add_argument(
         '--dry-run',
         action='store_true',
-        help='Just report filter counts and the number of candidates.'
-    )
+        help='Just report filter counts and the number of candidates.')
     parser.add_argument(
         '--ignore-if-need-be',
         action='store_true',
@@ -87,11 +92,6 @@ def get_commandline_arguments():
         type=int,
         help='Exclude candidates where any one facilitator must facilitate more than the given number of meetings.')
     return parser.parse_args()
-
-
-def load_file(filepath):
-    with open(filepath) as f:
-        return f.read()
 
 
 def get_meeting_filters(args):
@@ -144,16 +144,13 @@ def generate_meeting_sets(meetings, k):
     return combinations(meetings, k)
 
 
-def get_meeting_set_filters(args, people):
+def get_meeting_set_filters(args, doodle_poll):
     filters = []
-    filters.append(AllParticipantsCanAttendAtLeastOneMeetingFilter(participants(people)))
+    participants = doodle_poll.get_participants()
+    filters.append(AllParticipantsCanAttendAtLeastOneMeetingFilter(participants))
     if args.max_facilitations:
         filters.append(MaxFacilitationsFilter(args.min_facilitators, args.max_facilitations))
     return filters
-
-
-def participants(people):
-    return [p for p in people if p[0] != '*']
 
 
 def print_meeting_sets(meeting_sets):
@@ -165,67 +162,190 @@ def print_meeting_sets(meeting_sets):
         print()
 
 
- # this looks like a hyphon, but it's not
-DOODLEPOLL_TIME_SEPARATOR = ' – '
+class DoodlePoll:
+    @classmethod
+    def from_csv_file(cls, path_to_file, if_need_be_yes=True):
+        string = load_file(path_to_file)
+        return cls.from_csv_string(string, if_need_be_yes)
+
+    @classmethod
+    def from_csv_string(cls, string, if_need_be_yes=True):
+        lines = string.split('\n')
+        raw_data = [ln.split(',') for ln in lines]
+        datetimes = tuple(cls.parse_datetimes(raw_data))
+        people = tuple(cls.parse_people(raw_data))
+        matrix = cls.parse_availability_matrix(raw_data, if_need_be_yes)
+        return DoodlePoll(people, datetimes, matrix)
+
+    @classmethod
+    def parse_datetimes(cls, raw_data):
+        # this looks like a hyphon, but it's not
+        DOODLEPOLL_TIME_SEPARATOR = ' – '
+        times = raw_data[3:6]
+        for i in range(1, len(times[0])):
+            if times[0][i]:
+                month_year = times[0][i]
+            if times[1][i]:
+                day_date = times[1][i]
+                date = day_date.split(' ')[1]
+            if times[2][i]:
+                time = times[2][i]
+                start_time = time.split(DOODLEPOLL_TIME_SEPARATOR)[0]
+            dt = datetime.strptime(f'{month_year} {date} {start_time}', '%b %Y %d %I:%M %p')
+            yield dt
+
+    @classmethod
+    def parse_people(cls, raw_data):
+        rows = raw_data[6:cls.get_index_of_count_row(raw_data)]
+        for r in rows:
+            name = r[0]
+            if name[0] == '*':
+                yield Facilitator(name)
+            else:
+                yield Participant(name)
+
+    @classmethod
+    def parse_availability_matrix(cls, raw_data, if_need_be_yes=True):
+        rows = [row[1:] for row in raw_data[6:cls.get_index_of_count_row(raw_data)]]
+        for row in rows:
+            for i in range(len(row)):
+                if row[i] == 'OK':
+                    row[i] = Yes()
+                elif row[i] == '(OK)':
+                    if if_need_be_yes:
+                        row[i] = IfNeedBeYes()
+                    else:
+                        row[i] = IfNeedBeNo()
+                else:
+                    row[i] = No()
+        return rows
+
+    @classmethod
+    def get_index_of_count_row(cls, raw_data):
+        for i in range(-1, -len(raw_data), -1):
+            if raw_data[i][0] == 'Count':
+                return i
+
+    def __init__(self, people, datetimes, availability_matrix):
+        self.people = people
+        self.datetimes = datetimes
+        self.availability_matrix = availability_matrix
+
+    def get_meetings(self):
+        for dt in self.datetimes:
+            yield Meeting(dt, self.get_people_who_can_attend(dt))
+
+    def get_people_who_can_attend(self, datetime):
+        datetime_index = self.datetimes.index(datetime)
+        for person_index, person_is_available in enumerate(self.availability_matrix):
+            if person_is_available[datetime_index]:
+                yield self.people[person_index]
+
+    def get_participants_who_can_attend(self, datetime):
+        return filter(lambda x: x.is_participant(), self.get_people_who_can_attend(datetime))
+
+    def get_facilitators_who_can_attend(self, datetime):
+        return filter(lambda x: x.is_facilitator(), self.get_people_who_can_attend(datetime))
+
+    def get_people(self):
+        return self.people
+
+    def get_participants(self):
+        return filter(lambda x: x.is_participant(), self.get_people())
+
+    def get_facilitators(self):
+        return filter(lambda x: x.is_facilitator(), self.get_people())
 
 
-def parse_meetings(s, ignore_if_need_be=False):
-    meetings = []
-    rows = s.split('\n')
-    rows = [r.split(',') for r in rows]
-    times = rows[3:6]
-    for i in range(1, len(times[0])):
-        if times[0][i]:
-            month_year = times[0][i]
-        if times[1][i]:
-            day_date = times[1][i]
-            date = day_date.split(' ')[1]
-        if times[2][i]:
-            time = times[2][i]
-            start_time = time.split(DOODLEPOLL_TIME_SEPARATOR)[0]
-        dt = datetime.strptime(f'{month_year} {date} {start_time}', '%b %Y %d %I:%M %p')
-
-        people_who_can_attend = []
-        for j in range(6, len(rows)-1):
-            if rows[j][i]:
-                people_who_can_attend.append(rows[j][0])
-
-        people_who_can_attend_if_need_be = []
-        for j in range(6, len(rows)-1):
-            if rows[j][i] == '(OK)':
-                people_who_can_attend_if_need_be.append(rows[j][0])
-
-        if ignore_if_need_be:
-            people_who_can_attend = [p for p in people_who_can_attend if p not in people_who_can_attend_if_need_be]
-
-        m = Meeting(dt, people_who_can_attend, people_who_can_attend_if_need_be)
-        meetings.append(m)
-
-    return meetings
+def load_file(filepath):
+    with open(filepath) as f:
+        return f.read()
 
 
-def parse_people(csv_string):
-    meetings = []
-    rows = csv_string.split('\n')
-    rows = [r.split(',') for r in rows]
-    return [rows[j][0] for j in range(6, len(rows)-1)]
+class Person:
+    def __init__(self, name):
+        self.name = name
+
+    def is_facilitator(self):
+        return False
+
+    def is_participant(self):
+        return False
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __ne__(self, other):
+        return self.name != other.name
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return str(self)
+
+    def __hash__(self):
+        return hash(self.name)
+
+
+class Facilitator(Person):
+    def is_facilitator(self):
+        return True
+
+
+class Participant(Person):
+    def is_participant(self):
+        return True
+
+
+class Response:
+    def is_if_need_be(self):
+        return False
+
+
+class Yes(Response):
+    def __bool__(self):
+        return True
+
+
+class No(Response):
+    def __bool__(self):
+        return False
+
+
+class IfNeedBe(Response):
+    def is_if_need_be(self):
+        return True
+
+
+class IfNeedBeYes(IfNeedBe, Yes):
+    pass
+
+
+class IfNeedBeNo(IfNeedBe, No):
+    pass
 
 
 class Meeting:
-    def __init__(self, datetime, people_who_can_attend, people_who_can_attend_if_need_be):
+    def __init__(self, datetime, people_who_can_attend):
         self.datetime = datetime
-        self.people_who_can_attend = people_who_can_attend
-        if self.people_who_can_attend is not None:
-            self.facilitators_who_can_attend = [x for x in self.people_who_can_attend if x[0] == '*']
-            self.participants_who_can_attend = [x for x in self.people_who_can_attend if x[0] != '*']
+        if people_who_can_attend is not None:
+            self.people_who_can_attend = tuple(people_who_can_attend)
         else:
-            self.facilitators_who_can_attend = None
-            self.participants_who_can_attend = None
-        self.people_who_can_attend_if_need_be = people_who_can_attend_if_need_be
+            self.people_who_can_attend = None
+
+    def get_people_who_can_attend(self):
+        return self.people_who_can_attend
+
+    def get_participants_who_can_attend(self):
+        return filter(lambda x: x.is_participant(), self.get_people_who_can_attend())
+
+    def get_facilitators_who_can_attend(self):
+        return filter(lambda x: x.is_facilitator(), self.get_people_who_can_attend())
 
     def __str__(self):
         s = [self.datetime.strftime('%c')]
-        for a in self.people_who_can_attend:
+        for a in self.get_people_who_can_attend():
             s.append(f'{a}')
         return '\n    '.join(s)
 
@@ -247,13 +367,6 @@ class Filter:
         else:
             self.fail_count += 1
             return False
-
-    def apply_and_count(self, items):
-        self.count_in = len(items)
-        items = list(filter(self.condition, items))
-        self.count_out = len(items)
-        self.filtered = self.count_in - self.count_out
-        return items
 
     def __str__(self):
         if hasattr(self, 'name'):
@@ -292,7 +405,7 @@ class MinPeopleFilter(Filter):
         self.name = f'MinPeopleFilter({n})'
 
     def condition(self, meeting):
-        return len(meeting.people_who_can_attend) >= self.n
+        return len(list(meeting.get_people_who_can_attend())) >= self.n
 
 
 class MaxPeopleFilter(Filter):
@@ -301,7 +414,7 @@ class MaxPeopleFilter(Filter):
         self.name = f'MaxPeopleFilter({n})'
 
     def condition(self, meeting):
-        return len(meeting.people_who_can_attend) <= self.n
+        return len(list(meeting.get_people_who_can_attend())) <= self.n
 
 
 class MinFacilitatorsFilter(Filter):
@@ -310,7 +423,7 @@ class MinFacilitatorsFilter(Filter):
         self.name = f'MinFacilitatorsFilter({n})'
 
     def condition(self, meeting):
-        return len(meeting.facilitators_who_can_attend) >= self.n
+        return len(list(meeting.get_facilitators_who_can_attend())) >= self.n
 
 
 class MaxFacilitatorsFilter(Filter):
@@ -319,7 +432,7 @@ class MaxFacilitatorsFilter(Filter):
         self.name = f'MaxFacilitatorsFilter({n})'
 
     def condition(self, meeting):
-        return len(meeting.facilitators_who_can_attend) <= self.n
+        return len(list(meeting.get_facilitators_who_can_attend())) <= self.n
 
 
 class MinParticipantsFilter(Filter):
@@ -328,7 +441,7 @@ class MinParticipantsFilter(Filter):
         self.name = f'MinParticipantsFilter({n})'
 
     def condition(self, meeting):
-        return len(meeting.participants_who_can_attend) >= self.n
+        return len(list(meeting.get_participants_who_can_attend())) >= self.n
 
 
 class MaxParticipantsFilter(Filter):
@@ -337,20 +450,18 @@ class MaxParticipantsFilter(Filter):
         self.name = f'MaxParticipantsFilter({n})'
 
     def condition(self, meeting):
-        return len(meeting.participants_who_can_attend) <= self.n
+        return len(list(meeting.get_participants_who_can_attend())) <= self.n
 
 
 class AllParticipantsCanAttendAtLeastOneMeetingFilter(Filter):
     def __init__(self, all_participants):
-        self.all_participants = all_participants
+        self.all_participants = set(all_participants)
 
     def condition(self, meeting_set):
-        unaccounted = set(self.all_participants)
+        coverage = set()
         for m in meeting_set:
-            for p in m.participants_who_can_attend:
-                if p in unaccounted:
-                    unaccounted.remove(p)
-        return len(unaccounted) == 0
+            coverage = coverage.union(set(m.get_participants_who_can_attend()))
+        return len(coverage) == len(self.all_participants)
 
 
 class MaxFacilitationsFilter(Filter):
@@ -362,7 +473,7 @@ class MaxFacilitationsFilter(Filter):
     def condition(self, meeting_set):
         each_meetings_minimum_facilitator_combinations = []
         for m in meeting_set:
-            c = combinations(m.facilitators_who_can_attend, self.min_facilitators)
+            c = combinations(m.get_facilitators_who_can_attend(), self.min_facilitators)
             each_meetings_minimum_facilitator_combinations.append(c)
         for configuration in product(*each_meetings_minimum_facilitator_combinations):
             c = Counter([f for meeting_facilitators in configuration for f in meeting_facilitators])
