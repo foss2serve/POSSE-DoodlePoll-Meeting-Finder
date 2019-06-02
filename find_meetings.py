@@ -5,6 +5,429 @@ from collections import Counter
 import operator as op
 from functools import reduce
 import sys
+import abc
+
+
+def main():
+    System.default_configuration().run()
+
+
+class System:
+    @classmethod
+    def default_configuration(cls):
+        system = System(argparse.ArgumentParser())
+        system.install_components(get_default_component_list())
+        system.process_command_line_argument_list(sys.argv[1:])
+        return system
+
+    def __init__(self, command_line_parser):
+        self.command_line_parser = command_line_parser
+        self.command_line_parameter_map = {}
+        self.doodle_poll = None
+        self.meetings_per_solution = 1
+        self.meeting_list = None
+        self.number_of_candidates = None
+        self.is_dry_run = False
+        self.meeting_filter_list = []
+        self.candidate_filter_list = []
+        self.minimum_number_of_facilitators = 1
+
+    def install_components(self, components):
+        for comp in components:
+            comp.install_into_system(self)
+
+    def add_command_line_parameter(self, command_line_parameter):
+        self.command_line_parameter_map[name] = command_line_parameter
+        (name, kwargs) = command_line_parameter.get_commaind_line_paraemter_config()
+        self.command_line_parser.add_argument(name, **kwargs)
+
+    def process_command_line_argument_list(self, command_line_argument_list):
+        args = self.command_line_parser.parse_args(command_line_argument_list)
+        for key in args.keys():
+            self.command_line_parameter_map[key].process_command_line_argument(args[key])
+
+    def set_doodle_poll(self, doodle_poll):
+        self.doodle_poll = doodle_poll
+
+    def set_meetings_per_solution(self, value):
+        self.meetings_per_solution = value
+
+    def run(self):
+        self.get_and_filter_meetings_from_doodle_poll()
+        self.print_meeting_filter_statistics()
+        self.calculate_number_of_candidates()
+        self.print_number_of_candidates()
+        self.halt_if_this_is_a_dry_run()
+        self.find_and_print_solutions()
+
+    def get_and_filter_meetings_from_doodle_poll(self):
+        meetings = self.get_meetings_from_doodle_poll(self.treat_if_need_be_as_no)
+        meetings = self.filter_meetings(meetings)
+        self.set_meeting_list(list(meetings))
+
+    def get_meetings_from_doodle_poll(self, treat_if_need_be_as_no):
+        return self.doodle_poll.get_meetings(treat_if_need_be_as_no)
+
+    def filter_meetings(self, meetings):
+        return self.apply_filters(self.meeting_filter_list, meetings)
+
+    def apply_filters(filters, items):
+        for f in filters:
+            items = f.apply(items)
+        return items
+
+    def print_meeting_filter_statistics(self):
+        for f in self.get_meeting_filter_list():
+            print(f)
+
+    def calculate_number_of_candidates(self):
+        self.number_of_candidates = ncr(len(self.meeting_list), self.meetings_per_solution)
+
+    def print_number_of_candidates(self):
+        print('Number of candidates:', self.number_of_candidates)
+
+    def halt_if_this_is_a_dry_run(self):
+        if self.is_dry_run:
+            sys.exit(0)
+
+    def find_and_print_solutions(self):
+        candidates = self.generate_candidates(self.meeting_list)
+        solutions = self.filter_candidates(candidates)
+        for sol in solutions:
+            self.print_solution(sol)
+
+    def generate_candidates(self, meeting_list):
+        return combinations(meeting_list, self.meetings_per_solution)
+
+    def filter_candidates(self, candidates):
+        return self.apply_filters(self.candidate_filter_list, candidates)
+
+    def print_solution(self, solution):
+        print(solution)
+
+
+def get_default_component_list():
+    return [
+        DoodlePollCsvFileLoader(),
+        MeetingsPerSolution(),
+        WeekdayOnly(),
+        MinStart(),
+        MaxStart(),
+        MinPeople(),
+        MaxPeople(),
+        MinFacilitators(),
+        MaxFacilitators(),
+        MinParticipants(),
+        MaxParticipants(),
+        MaxFacilitations(),
+        ]
+
+
+class Component:
+    __metaclass__ = abc.ABCMeta
+
+    def install(self, system):
+        self.system = system
+        self.install_into_system(system)
+
+    @abc.abstractmethod
+    def install_into_system(self):
+        pass
+
+
+class CommandLineParameter(Component):
+    __metaclass__ = abc.ABCMeta
+
+    def install_into_system(self):
+        self.system.add_command_line_parameter(self)
+
+    @abc.abstractmethod
+    def get_commaind_line_paraemter_config(self):
+        '''
+        Return a tuple whose first element is passed to argsparse.add_argument.
+        The first element is the name or option.
+        The second element is a dictionary of keyword arguments ot add_argument.
+        For example ('--size', {'type':int, 'deafult':1})
+        '''
+        pass
+
+    @abc.abstractmethod
+    def process_command_line_argument(self, argument):
+        '''Called when a command line argument is passed for this parameter.'''
+        pass
+
+
+class FilterParameter(CommandLineParameter):
+    __metaclass__ = abc.ABCMeta
+
+    def process_command_line_argument(self, arg):
+        self.system.add_meeting_filter(self.WeekdayOnlyFilter())
+
+    @abc.abstractmethod
+    def get_filter(self):
+        return None
+
+
+class Filter:
+    __metaclass__ = abc.ABCMeta
+
+    def apply(self, items):
+        self.success_count = 0
+        self.fail_count = 0
+        return filter(self.counting_condition, items)
+
+    def counting_condition(self, item):
+        if self.condition(item):
+            self.success_count += 1
+            return True
+        else:
+            self.fail_count += 1
+            return False
+
+    @abc.abstractmethod
+    def condition(self, item):
+        pass
+
+    def __str__(self):
+        if hasattr(self, 'name'):
+            name = self.name
+        else:
+            name = type(self).__name__
+        return f'{name}:  in={self.count_in}, filtered={self.count_in-self.count_out}, out={self.count_out}'
+
+
+class ParameterizedFilter:
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, arg):
+        self.arg = arg
+        self.name = f'{type(self).__name__}(arg)'
+
+
+class DoodlePollCsvFileLoader(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            'csv-file',
+            {
+                'type': argparse.FileType('r'),
+                'help': 'Path to the CSV file containing the results of a DoodlePoll.'
+            }
+        )
+
+    def process_command_line_argument(self, open_file):
+        string = open_file.read()
+        open_file.close()
+        doodle_poll = DoodlePoll.from_csv_string(string)
+        self.system.set_doodle_poll(doodle_poll)
+
+
+class MeetingsPerSolution(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--meetings-per-solution',
+            {
+                'type': int,
+                'default': 1,
+                'help': 'Number of meetings per solution.'
+            }
+        )
+
+    def process_command_line_argument(self, arg):
+        self.system.set_meetings_per_solution(arg)
+
+class WeekdayOnly(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--weekday-only',
+            {
+                'action': 'store_true',
+                'help': 'Only consider weekday meetings.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.WeekdayOnlyFilter()
+
+    class WeekdayOnlyFilter(Filter):
+        def condition(self, meeting):
+            return meeting.datetime.weekday() < 5
+
+class MinStart(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--min-start',
+            {
+                'type': int,
+                'default': 0,
+                'help': 'Exclude meetings starting before hour (24 clock).'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MinStartFilter(arg)
+
+    class MinStartFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.datetime.hour >= self.arg
+
+
+class MaxStart(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--max-start',
+            {
+                'type': int,
+                'default': 23,
+                'help': 'Exclude meetings starting after given hour (24 clock).'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MaxStartFilter(arg)
+
+    class MaxStartFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.datetime.hour <= self.arg
+
+
+class MinPeople(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--min-people',
+            {
+                'type': int,
+                'default': 2,
+                'help': 'Exclude meetings with fewer than given number of people who can attend.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MinPeopleFilter(arg)
+
+    class MinPeopleFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.get_number_of_people_who_can_attend() >= self.arg
+
+
+class MaxPeople(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--max-people',
+            {
+                'type': int,
+                'help': 'Exclude meetings with more than given number of people who can attend.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MaxPeopleFilter(arg)
+
+    class MaxPeopleFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.get_number_of_people_who_can_attend() <= self.arg
+
+
+class MinParticipants(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--min-participants',
+            {
+                'type': int,
+                'default': 1,
+                'help': 'Exclude meetings with fewer than given number of participants who can attend.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MinParticipantsFilter(arg)
+
+    class MinParticipantsFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.get_number_of_participants_who_can_attend() >= self.arg
+
+
+class MaxParticipants(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--max-participants',
+            {
+                'type': int,
+                'help': 'Exclude meetings with more than given number of participants who can attend.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MaxParticipantsFilter(arg)
+
+    class MaxParticipantsFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.get_number_of_participants_who_can_attend() <= self.arg
+
+
+class MinFacilitators(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--min-facilitators',
+            {
+                'type': int,
+                'default': 1,
+                'help': 'Exclude meetings with fewer than given number of facilitators who can attend.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MinFacilitatorsFilter(arg)
+
+    class MinFacilitatorsFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.get_number_of_facilitators_who_can_attend() >= self.arg
+
+
+class MaxFacilitators(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--max-facilitators',
+            {
+                'type': int,
+                'help': 'Exclude meetings with more than given number of facilitators who can attend.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MaxFacilitatorsFilter(arg)
+
+    class MaxFacilitatorsFilter(ParameterizedFilter):
+        def condition(self, meeting):
+            return meeting.get_number_of_facilitators_who_can_attend() <= self.arg
+
+
+class MaxFacilitations(CommandLineParameter):
+    def get_commaind_line_config(self):
+        return (
+            '--max-facilitations',
+            {
+                'type': int,
+                'help': 'Exclude candidates where any one facilitator must facilitate more than the given number of meetings.'
+            }
+        )
+
+    def get_filter(self, arg):
+        return self.MaxFacilitationsFilter(arg, self.system.minimum_number_of_facilitators)
+
+    class MaxFacilitationsFilter(Filter):
+        def __init__(self, arg, minimum_number_of_facilitators):
+            self.arg = arg
+            self.minimum_number_of_facilitators = minimum_number_of_facilitators
+        def condition(self, candidate):
+            each_meetings_minimum_facilitator_combinations = []
+            for m in candidate:
+                c = combinations(m.get_facilitators_who_can_attend(), self.minimum_number_of_facilitators)
+                each_meetings_minimum_facilitator_combinations.append(c)
+            for configuration in product(*each_meetings_minimum_facilitator_combinations):
+                c = Counter([f for meeting_facilitators in configuration for f in meeting_facilitators])
+                if all(v <= self.arg for v in c.values()):
+                    return True
+            return False
 
 
 def main():
