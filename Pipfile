@@ -6,9 +6,16 @@ verify_ssl = true
 [dev-packages]
 mypy = "*"
 flake8 = "*"
+pytest = "*"
+factory-boy = "*"
+coverage = "*"
+cosmic-ray = "*"
+cosmic-ray-pytest = "*"
+cosmic-ray-localpool = "*"
 
 [packages]
 dependency-injector = "*"
+attrs = "*"
 
 [requires]
 python_version = "3.7"
