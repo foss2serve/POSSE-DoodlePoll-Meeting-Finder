@@ -1,2 +1,0 @@
-class CommandLineInterface:
-    pass
