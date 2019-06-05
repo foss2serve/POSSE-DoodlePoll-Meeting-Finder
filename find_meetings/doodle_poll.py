@@ -1,3 +1,6 @@
+'''Responsible for parsing and internalizing DoodlePoll results into a
+data structure (DoodlePoll) that can then produce a list of Meetings.'''
+
 import datetime
 import enum
 from typing import Iterable

@@ -1,3 +1,6 @@
+'''Meetings provide summarized access to information about each possible
+meeting from a DoodlePoll.'''
+
 import datetime
 import operator
 from typing import Any
