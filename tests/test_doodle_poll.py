@@ -1,4 +1,4 @@
-import find_meetings.doodle_poll as doodle_poll
+import meeting_finder.doodle_poll as doodle_poll
 
 
 csv_str = '''"Poll ""IRC 2""",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

@@ -6,7 +6,7 @@ import enum
 from typing import Iterable
 from typing import List
 
-import find_meetings.meetings as meetings
+import meeting_finder.meeting as meeting_
 
 
 class Response(enum.Enum):
@@ -29,7 +29,7 @@ class DoodlePoll:
     def get_meetings(
             self,
             treat_if_need_be_as_yes: bool = True
-            ) -> Iterable[meetings.Meeting]:
+            ) -> Iterable[meeting_.Meeting]:
         ms = []
         for col, dt in enumerate(self.datetimes):
             facilitators: List[str] = []
@@ -43,7 +43,7 @@ class DoodlePoll:
                         facilitators.append(name)
                     else:
                         participants.append(name)
-            m = meetings.Meeting(dt, facilitators, participants)
+            m = meeting_.Meeting(dt, facilitators, participants)
             ms.append(m)
         return ms
 
