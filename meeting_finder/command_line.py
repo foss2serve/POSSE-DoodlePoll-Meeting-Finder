@@ -16,14 +16,22 @@ class Dispatcher:
 
     def dispatch(self, args: ty.List[str]) -> None:
         parser = argparse.ArgumentParser()
+        seen: ty.Set[str] = set()
         for param in self.parameters:
-            parser.add_argument(param.name, **param.opts)
+            if param.name not in seen:
+                seen.add(param.name)
+                parser.add_argument(param.name, **param.opts)
 
         parsed_args = parser.parse_args(args)
 
         for param in self.parameters:
-            if hasattr(parsed_args, param.name):
-                argument = parsed_args[param]
+            name = param.name
+            if name.startswith('--'):
+                name = name[2:]
+            name = name.replace('-', '_')
+            print(name)
+            if hasattr(parsed_args, name):
+                argument = getattr(parsed_args, name)
                 param.process(argument)
 
 
