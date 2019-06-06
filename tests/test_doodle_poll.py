@@ -53,7 +53,21 @@ def test_csv_file_parameter_with_file_path(
 
 
 def test_loader(csv_file):
-    loader_ = dp.Loader()
-    loader_.opened_file = open(csv_file, 'r')
-    doodle_poll = loader_.load()
+    loader = dp.Loader()
+    loader.opened_file = open(csv_file, 'r')
+    doodle_poll = loader.load()
     assert len(doodle_poll.respondents) == 13
+
+
+def test_loader_get_command_line_parameters():
+    loader = dp.Loader()
+    params = loader.get_command_line_parameters()
+    assert len(params) == 1
+    assert isinstance(params[0], dp.CsvFileParameter)
+
+
+def test_loader_set_opened_file(csv_file):
+    opened_file = open(csv_file, 'r')
+    loader = dp.Loader()
+    loader.set_opened_file(opened_file)
+    assert loader.opened_file == opened_file
