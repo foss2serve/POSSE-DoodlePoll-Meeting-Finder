@@ -29,7 +29,6 @@ class Dispatcher:
             if name.startswith('--'):
                 name = name[2:]
             name = name.replace('-', '_')
-            print(name)
             if hasattr(parsed_args, name):
                 argument = getattr(parsed_args, name)
                 param.process(argument)
