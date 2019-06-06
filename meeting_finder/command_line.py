@@ -42,3 +42,9 @@ class Parameter(abc.ABC):
     @abc.abstractmethod
     def process(self, argument: ty.Any) -> None:
         pass
+
+
+class ParameterProvider(abc.ABC):
+    @abc.abstractmethod
+    def get_command_line_parameters(self) -> ty.Iterable[Parameter]:
+        pass
