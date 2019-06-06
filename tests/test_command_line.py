@@ -1,4 +1,4 @@
-import meeting_finder.command_line as cl
+import meeting_finder.core.command_line as cl
 
 
 class TestParameter(cl.Parameter):

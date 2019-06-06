@@ -2,9 +2,9 @@ import argparse
 import sys
 import typing as ty
 
-import meeting_finder.command_line as cl
+import meeting_finder.core.command_line as cl
+import meeting_finder.core.doodle_poll as dp
 import meeting_finder.component.parameter_provider as pp
-import meeting_finder.doodle_poll as dp
 
 
 class Loader(pp.ParameterProvider):

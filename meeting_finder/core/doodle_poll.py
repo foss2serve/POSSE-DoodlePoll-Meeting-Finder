@@ -5,7 +5,7 @@ import datetime
 import enum
 import typing as ty
 
-import meeting_finder.meeting as mtg
+import meeting_finder.core.meeting as mtg
 
 
 class Response(enum.Enum):

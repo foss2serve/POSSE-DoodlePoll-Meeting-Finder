@@ -1,7 +1,7 @@
 import pytest
 
-import meeting_finder.doodle_poll as dp
-import meeting_finder.command_line as cl
+import meeting_finder.core.doodle_poll as dp
+import meeting_finder.core.command_line as cl
 import meeting_finder.component.doodle_poll_csv_loader as dpcl
 
 

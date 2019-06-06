@@ -1,7 +1,7 @@
 import abc
 import typing as ty
 
-import meeting_finder.command_line as cl
+import meeting_finder.core.command_line as cl
 
 
 class ParameterProvider(abc.ABC):
