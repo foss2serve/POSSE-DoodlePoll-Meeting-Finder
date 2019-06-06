@@ -3,23 +3,19 @@ meeting from a DoodlePoll.'''
 
 import datetime
 import operator
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Iterable
-from typing import Tuple
+import typing as ty
 
 
-MeetingDict = Dict[str, Any]
-MeetingTuple = Tuple[str, Iterable[str], Iterable[str]]
+MeetingDict = ty.Dict[str, ty.Any]
+MeetingTuple = ty.Tuple[str, ty.Iterable[str], ty.Iterable[str]]
 
 
 class Meeting:
     def __init__(
             self,
             start: datetime.datetime,
-            facilitators: Iterable[str],
-            participants: Iterable[str]
+            facilitators: ty.Iterable[str],
+            participants: ty.Iterable[str]
             ) -> None:
         self.start = start
         self.start_hour_24 = start.hour
@@ -35,12 +31,12 @@ def from_dict(dict_: MeetingDict) -> Meeting:
     return Meeting(start, facilitators, participants)
 
 
-def from_dicts(dicts: Iterable[MeetingDict]) -> Iterable[Meeting]:
+def from_dicts(dicts: ty.Iterable[MeetingDict]) -> ty.Iterable[Meeting]:
     for dict_ in dicts:
         yield from_dict(dict_)
 
 
-def from_tuples(tuples: Iterable[MeetingTuple]) -> Iterable[Meeting]:
+def from_tuples(tuples: ty.Iterable[MeetingTuple]) -> ty.Iterable[Meeting]:
     for tuple_ in tuples:
         yield from_tuple(tuple_)
 
@@ -55,13 +51,13 @@ def from_tuple(tuple_: MeetingTuple) -> Meeting:
 
 
 def filter_meetings(
-        meetings: Iterable[Meeting],
+        meetings: ty.Iterable[Meeting],
         field: str,
-        bin_relational_op: Callable[[Any, Any], bool],
-        val: Any
-        ) -> Iterable[Meeting]:
+        bin_relational_op: ty.Callable[[ty.Any, ty.Any], bool],
+        val: ty.Any
+        ) -> ty.Iterable[Meeting]:
     if bin_relational_op is operator.contains:
-        def reverse_contains(a: Any, b: Any) -> bool:
+        def reverse_contains(a: ty.Any, b: ty.Any) -> bool:
             return operator.contains(b, a)
         bin_relational_op = reverse_contains
     return filter(
