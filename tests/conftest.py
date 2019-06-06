@@ -1,7 +1,7 @@
 import pytest
 
-import meeting_finder.doodle_poll_loader as dpl
-import meeting_finder.command_line as command_line
+import meeting_finder.doodle_poll as dp
+import meeting_finder.command_line as cl
 
 
 class SpyLoader:
@@ -16,12 +16,12 @@ def spy_loader():
 
 @pytest.fixture
 def csv_file_parameter_with_spy_loader(spy_loader):
-    return dpl.CsvFileParameter(spy_loader)
+    return dp.CsvFileParameter(spy_loader)
 
 
 @pytest.fixture
 def dispatcher():
-    return command_line.Dispatcher()
+    return cl.Dispatcher()
 
 
 @pytest.fixture

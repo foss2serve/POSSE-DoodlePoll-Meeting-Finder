@@ -1,12 +1,14 @@
 '''Responsible for parsing and internalizing DoodlePoll results into a
 data structure (DoodlePoll) that can then produce a list of Meetings.'''
 
+import argparse
 import datetime
 import enum
-from typing import Iterable
-from typing import List
+import sys
+import typing as ty
 
-import meeting_finder.meeting as meeting_
+import meeting_finder.meeting as mtg
+import meeting_finder.command_line as cl
 
 
 class Response(enum.Enum):
@@ -18,9 +20,9 @@ class Response(enum.Enum):
 class DoodlePoll:
     def __init__(
             self,
-            respondents: Iterable[str],
-            datetimes: Iterable[datetime.datetime],
-            availabilities: Iterable[Iterable[Response]]
+            respondents: ty.Iterable[str],
+            datetimes: ty.Iterable[datetime.datetime],
+            availabilities: ty.Iterable[ty.Iterable[Response]]
             ) -> None:
         self.respondents = tuple(respondents)
         self.datetimes = tuple(datetimes)
@@ -29,11 +31,11 @@ class DoodlePoll:
     def get_meetings(
             self,
             treat_if_need_be_as_yes: bool = True
-            ) -> Iterable[meeting_.Meeting]:
+            ) -> ty.Iterable[mtg.Meeting]:
         ms = []
         for col, dt in enumerate(self.datetimes):
-            facilitators: List[str] = []
-            participants: List[str] = []
+            facilitators: ty.List[str] = []
+            participants: ty.List[str] = []
             for row, name in enumerate(self.respondents):
                 r = self.availabilities[row][col]
                 if r is Response.YES \
@@ -43,7 +45,7 @@ class DoodlePoll:
                         facilitators.append(name)
                     else:
                         participants.append(name)
-            m = meeting_.Meeting(dt, facilitators, participants)
+            m = mtg.Meeting(dt, facilitators, participants)
             ms.append(m)
         return ms
 
@@ -78,9 +80,9 @@ def from_csv_str(csv_str: str) -> DoodlePoll:
         start_datetimes.append(start_datetime)
 
     m = [r[1:] for r in data[names_start_row:names_end_row]]
-    m2: List[List[Response]] = []
+    m2: ty.List[ty.List[Response]] = []
     for r in m:
-        row: List[Response] = []
+        row: ty.List[Response] = []
         for v in r:
             if v == 'OK':
                 row.append(Response.YES)
@@ -91,3 +93,31 @@ def from_csv_str(csv_str: str) -> DoodlePoll:
         m2.append(row)
 
     return DoodlePoll(names, start_datetimes, m2)
+
+
+class Loader(cl.ParameterProvider):
+    def __init__(self) -> None:
+        self.opened_file = sys.stdin
+
+    def load(self) -> DoodlePoll:
+        string = self.opened_file.read()
+        return from_csv_str(string)
+
+    def get_command_line_parameters(self) -> ty.Iterable[cl.Parameter]:
+        return [CsvFileParameter(self)]
+
+
+class CsvFileParameter(cl.Parameter):
+    name = '--file'
+    opts = {
+        'help':
+            '(default stdin) Path to CSV file containing DoodlePoll results.',
+        'type': argparse.FileType('r'),
+        'default': sys.stdin,
+    }
+
+    def __init__(self, loader: Loader) -> None:
+        self.loader = loader
+
+    def process(self, opened_file: ty.TextIO) -> None:
+        self.loader.opened_file = opened_file
