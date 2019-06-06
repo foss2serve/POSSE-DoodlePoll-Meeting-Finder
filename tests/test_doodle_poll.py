@@ -4,6 +4,7 @@ import pytest
 
 import meeting_finder.doodle_poll as dp
 import meeting_finder.command_line as cl
+import meeting_finder.component.doodle_poll_csv_loader as dpcl
 
 
 def test_from_csv_str(csv_str):
@@ -53,21 +54,21 @@ def test_csv_file_parameter_with_file_path(
 
 
 def test_loader(csv_file):
-    loader = dp.Loader()
+    loader = dpcl.Loader()
     loader.opened_file = open(csv_file, 'r')
     doodle_poll = loader.load()
     assert len(doodle_poll.respondents) == 13
 
 
 def test_loader_get_command_line_parameters():
-    loader = dp.Loader()
+    loader = dpcl.Loader()
     params = loader.get_command_line_parameters()
     assert len(params) == 1
-    assert isinstance(params[0], dp.CsvFileParameter)
+    assert isinstance(params[0], dpcl.CsvFileParameter)
 
 
 def test_loader_set_opened_file(csv_file):
     opened_file = open(csv_file, 'r')
-    loader = dp.Loader()
+    loader = dpcl.Loader()
     loader.set_opened_file(opened_file)
     assert loader.opened_file == opened_file

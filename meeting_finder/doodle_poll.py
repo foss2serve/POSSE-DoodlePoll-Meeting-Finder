@@ -1,14 +1,11 @@
 '''Responsible for parsing and internalizing DoodlePoll results into a
 data structure (DoodlePoll) that can then produce a list of Meetings.'''
 
-import argparse
 import datetime
 import enum
-import sys
 import typing as ty
 
 import meeting_finder.meeting as mtg
-import meeting_finder.command_line as cl
 
 
 class Response(enum.Enum):
@@ -93,34 +90,3 @@ def from_csv_str(csv_str: str) -> DoodlePoll:
         m2.append(row)
 
     return DoodlePoll(names, start_datetimes, m2)
-
-
-class Loader(cl.ParameterProvider):
-    def __init__(self) -> None:
-        self.opened_file = sys.stdin
-
-    def set_opened_file(self, opened_file: ty.TextIO) -> None:
-        self.opened_file = opened_file
-
-    def load(self) -> DoodlePoll:
-        string = self.opened_file.read()
-        return from_csv_str(string)
-
-    def get_command_line_parameters(self) -> ty.Iterable[cl.Parameter]:
-        return [CsvFileParameter(self)]
-
-
-class CsvFileParameter(cl.Parameter):
-    name = '--file'
-    opts = {
-        'help':
-            '(default stdin) Path to CSV file containing DoodlePoll results.',
-        'type': argparse.FileType('r'),
-        'default': sys.stdin,
-    }
-
-    def __init__(self, loader: Loader) -> None:
-        self.loader = loader
-
-    def process(self, opened_file: ty.TextIO) -> None:
-        self.loader.set_opened_file(opened_file)
