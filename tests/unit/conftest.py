@@ -1,26 +1,24 @@
 import pytest
 
-import meeting_finder.core.doodle_poll as dp
-import meeting_finder.core.command_line as cl
-import meeting_finder.component.doodle_poll_csv_loader as dpcl
-
-
-class SpyLoader:
-    def __init__(self):
-        self.opened_file = None
-
-    def set_opened_file(self, f):
-        self.opened_file = f
-
-
-@pytest.fixture
-def spy_loader():
-    return SpyLoader()
+import meeting_finder.components.command_line as cl
+import meeting_finder.components.csv_doodle_poll as cdp
 
 
 @pytest.fixture
 def csv_file_parameter_with_spy_loader(spy_loader):
-    return dpcl.CsvFileParameter(spy_loader)
+    return cdp.CsvFileParameter(spy_loader)
+
+
+@pytest.fixture
+def spy_loader():
+    class SpyLoader:
+        def __init__(self):
+            self.opened_file = None
+
+        def set_opened_file(self, f):
+            self.opened_file = f
+
+    return SpyLoader()
 
 
 @pytest.fixture
@@ -33,6 +31,13 @@ def tmpfile(tmpdir):
     afile = tmpdir.join("hello.csv")
     afile.write("content")
     return afile
+
+
+@pytest.fixture
+def csv_file(csv_str, tmpdir):
+    csv_file = tmpdir.join("file.csv")
+    csv_file.write(csv_str)
+    return csv_file
 
 
 @pytest.fixture
@@ -57,10 +62,3 @@ J,OK,,,,(OK),OK,,,,(OK),,,,,,,,,(OK),OK,,,,,OK,,OK,,,,,,(OK),OK,,,,(OK),,,,(OK),
 L,OK,(OK),(OK),(OK),(OK),(OK),(OK),(OK),,,,,,,(OK),(OK),(OK),(OK),(OK),(OK),(OK),(OK),,,,,,,OK,OK,OK,OK,OK,OK,OK,OK,,,,,,,OK,OK,OK,OK,OK,OK,OK,OK,,,,,,,,,,,,,,,,,,,,,OK,OK,OK,OK,OK,OK,OK,OK,,,,,,
 *M,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,OK,,,OK,,,OK,OK,OK,OK,OK,,,,,,,,,,,,,,,,,,,
 Count,0:3:11,2:1:11,3:1:10,4:1:9,3:2:9,6:1:7,5:1:8,6:1:7,4:0:10,4:1:9,5:0:9,2:0:12,2:0:12,2:0:12,0:3:11,2:1:11,2:1:11,2:1:11,3:2:9,6:1:7,4:1:9,5:1:8,3:0:11,3:0:11,3:0:11,2:0:12,2:1:11,1:1:12,1:2:11,4:0:10,5:0:9,6:0:8,6:1:7,6:0:8,5:0:9,6:0:8,4:0:10,4:1:9,3:0:11,2:0:12,0:1:13,0:2:12,1:0:13,2:0:12,3:0:11,6:0:8,7:1:6,9:0:5,8:1:5,8:0:6,5:0:9,4:0:10,3:0:11,3:0:11,1:1:12,1:1:12,1:1:12,6:0:8,5:0:9,5:0:9,5:1:8,6:0:8,5:0:9,5:0:9,5:0:9,3:2:9,3:1:10,1:1:12,2:1:11,2:1:11,1:0:13,1:0:13,1:1:12,1:1:12,1:1:12,4:1:9,4:1:9,5:1:8,4:1:9,3:2:9,3:1:10,3:1:10,3:1:10,4:0:10'''
-
-
-@pytest.fixture
-def csv_file(csv_str, tmpdir):
-    csv_file = tmpdir.join("file.csv")
-    csv_file.write(csv_str)
-    return csv_file

@@ -1,4 +1,4 @@
-import meeting_finder.core.meeting as meeting_
+import meeting_finder.components.meeting as meeting_
 
 
 def test_from_dicts():

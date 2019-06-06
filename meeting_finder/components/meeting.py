@@ -1,5 +1,7 @@
-'''Meetings provide summarized access to information about each possible
-meeting from a DoodlePoll.'''
+'''
+Meeting provide summarized access to information about each possible
+meeting from a DoodlePoll.
+'''
 
 import datetime
 import operator
