@@ -5,7 +5,6 @@ import meeting_finder.core.command_line as cl
 import meeting_finder.component.doodle_poll_csv_loader as dpcl
 
 
-
 class SpyLoader:
     def __init__(self):
         self.opened_file = None
