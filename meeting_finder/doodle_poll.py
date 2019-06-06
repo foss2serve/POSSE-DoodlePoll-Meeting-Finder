@@ -99,6 +99,9 @@ class Loader(cl.ParameterProvider):
     def __init__(self) -> None:
         self.opened_file = sys.stdin
 
+    def set_opened_file(self, opened_file: ty.TextIO) -> None:
+        self.opened_file = opened_file
+
     def load(self) -> DoodlePoll:
         string = self.opened_file.read()
         return from_csv_str(string)
@@ -120,4 +123,4 @@ class CsvFileParameter(cl.Parameter):
         self.loader = loader
 
     def process(self, opened_file: ty.TextIO) -> None:
-        self.loader.opened_file = opened_file
+        self.loader.set_opened_file(opened_file)

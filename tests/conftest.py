@@ -8,6 +8,9 @@ class SpyLoader:
     def __init__(self):
         self.opened_file = None
 
+    def set_opened_file(self, f):
+        self.opened_file = f
+
 
 @pytest.fixture
 def spy_loader():
