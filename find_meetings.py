@@ -191,7 +191,7 @@ class DoodlePoll:
             if times[2][i]:
                 time = times[2][i]
                 start_time = time.split(DOODLEPOLL_TIME_SEPARATOR)[0]
-            dt = datetime.strptime(f'{month_year} {date} {start_time}', '%b %Y %d %I:%M %p')
+            dt = datetime.strptime(f'{month_year} {date} {start_time}', '%B %Y %d %I:%M %p')
             yield dt
 
     @classmethod
