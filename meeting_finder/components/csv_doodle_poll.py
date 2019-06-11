@@ -9,6 +9,21 @@ import meeting_finder.components.command_line_base as cl_base
 import meeting_finder.components.meeting as mtg
 
 
+class Loader(app_base.Component):
+    def __init__(self) -> None:
+        self.opened_file = sys.stdin
+
+    def set_opened_file(self, opened_file: ty.TextIO) -> None:
+        self.opened_file = opened_file
+
+    def load(self) -> 'DoodlePoll':
+        string = self.opened_file.read()
+        return from_csv_str(string)
+
+    def get_command_line_parameters(self) -> ty.Iterable[cl_base.Parameter]:
+        return [CsvFileParameter(self)]
+
+
 class Response(enum.Enum):
     NO = 0
     YES = 1
@@ -46,21 +61,6 @@ class DoodlePoll:
             m = mtg.Meeting(dt, facilitators, participants)
             ms.append(m)
         return ms
-
-
-class Loader(app_base.Component):
-    def __init__(self) -> None:
-        self.opened_file = sys.stdin
-
-    def set_opened_file(self, opened_file: ty.TextIO) -> None:
-        self.opened_file = opened_file
-
-    def load(self) -> DoodlePoll:
-        string = self.opened_file.read()
-        return from_csv_str(string)
-
-    def get_command_line_parameters(self) -> ty.Iterable[cl_base.Parameter]:
-        return [CsvFileParameter(self)]
 
 
 class CsvFileParameter(cl_base.Parameter):
