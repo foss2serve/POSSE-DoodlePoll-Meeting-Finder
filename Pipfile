@@ -12,6 +12,7 @@ coverage = "*"
 cosmic-ray = "*"
 cosmic-ray-pytest = "*"
 cosmic-ray-localpool = "*"
+pytest-bdd = "*"
 
 [packages]
 dependency-injector = "*"
