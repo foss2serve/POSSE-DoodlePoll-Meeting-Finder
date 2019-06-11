@@ -6,19 +6,19 @@ import meeting_finder.components.csv_doodle_poll as cdp
 
 @pytest.fixture
 def csv_file_parameter_with_spy_loader(spy_loader):
-    return cdp.CsvFileParameter(spy_loader)
+    return cdp.CsvDoodlePollFileLoader.CsvFileParameter(spy_loader)
 
 
 @pytest.fixture
 def spy_loader():
-    class SpyLoader:
+    class SpyCsvDoodlePollFileLoader:
         def __init__(self):
             self.opened_file = None
 
         def set_opened_file(self, f):
             self.opened_file = f
 
-    return SpyLoader()
+    return SpyCsvDoodlePollFileLoader()
 
 
 @pytest.fixture

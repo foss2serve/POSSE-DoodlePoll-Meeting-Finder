@@ -9,7 +9,7 @@ import typing as ty
 import meeting_finder.app_base as app_base
 import meeting_finder.components.command_line as cl
 import meeting_finder.components.csv_doodle_poll as cdp
-# import meeting_finder.components.meeting as mtg
+import meeting_finder.components.meeting_generator as mg
 # import meeting_finder.components.flow as flow
 # import meeting_finder.components.candidate as can
 # import meeting_finder.components.solution as sol
@@ -19,8 +19,8 @@ def with_default_components() -> 'App':
     '''Return an App with default components.'''
     return App(
         cl.Dispatcher(),
-        cdp.Loader()
-        # mtg.Generator(),
+        cdp.CsvDoodlePollFileLoader(),
+        mg.MeetingGenerator()
         # mtg.Filter(),
         # mtg.FilterReporter(),
         # can.SearchSpaceReporter(),
@@ -36,8 +36,8 @@ class App:
     def __init__(
             self,
             command_line_dispatcher: cl.Dispatcher,
-            csv_doodle_poll_loader: cdp.Loader
-            # meeting_generator: mtg.Generator,
+            csv_doodle_poll_loader: cdp.CsvDoodlePollFileLoader,
+            meeting_generator: mg.MeetingGenerator
             # meeting_filter: mtg.Filter,
             # meeting_filter_reporter: mtg.FilterReporter,
             # candidate_search_space_reporter: can.SearchSpaceReporter,
@@ -49,7 +49,7 @@ class App:
             ) -> None:
         self.command_line_dispatcher = command_line_dispatcher
         self.csv_doodle_poll_loader = csv_doodle_poll_loader
-        # self.meeting_generator = meeting_generator
+        self.meeting_generator = meeting_generator
         # self.meeting_filter = meeting_filter
         # self.meeting_filter_reporter = meeting_filter_reporter
         # self.candidate_search_space_reporter = \
@@ -62,7 +62,7 @@ class App:
 
         self.gather_cl_params([
             self.csv_doodle_poll_loader,
-            # self.meeting_generator,
+            self.meeting_generator,
             # self.meeting_filter,
             # self.meeting_filter_reporter,
             # self.candidate_search_space_reporter,
@@ -84,8 +84,8 @@ class App:
     def run(self, args: ty.List[str]) -> None:
         self.command_line_dispatcher.dispatch(args)
         poll = self.csv_doodle_poll_loader.load()
-        assert poll is not None
-        # meetings = self.meeting_generator.generate(poll)
+        meetings = self.meeting_generator.generate(poll)
+        assert meetings is not None
         # meetings = self.meeting_filter.filter(meetings)
         # self.meeting_filter_reporter.report(self.meeting_filter)
         # self.candidate_search_space_reporter.report(meetings)

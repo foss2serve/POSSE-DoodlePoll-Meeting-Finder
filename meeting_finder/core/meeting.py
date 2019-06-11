@@ -8,10 +8,6 @@ import operator
 import typing as ty
 
 
-MeetingDict = ty.Dict[str, ty.Any]
-MeetingTuple = ty.Tuple[str, ty.Iterable[str], ty.Iterable[str]]
-
-
 class Meeting:
     def __init__(
             self,
@@ -24,6 +20,13 @@ class Meeting:
         self.weekday = start.weekday()
         self.facilitators = frozenset(facilitators)
         self.participants = frozenset(participants)
+
+
+# I suspect the rest of this won't be used by any part of the system except
+# for tests. If so, it should be moved to a test helper.
+
+MeetingDict = ty.Dict[str, ty.Any]
+MeetingTuple = ty.Tuple[str, ty.Iterable[str], ty.Iterable[str]]
 
 
 def from_dict(dict_: MeetingDict) -> Meeting:
