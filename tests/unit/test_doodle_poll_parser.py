@@ -4,31 +4,38 @@ import pytest
 
 import meeting_finder.components.csv_doodle_poll as cdp
 import meeting_finder.components.command_line as cl
+import meeting_finder.functions.parse_doodle_poll_from_csv_str as csv_parser
+
+@pytest.fixture
+def dispatcher():
+    return cl.Dispatcher()
+
+
+@pytest.fixture
+def csv_file_parameter_with_spy_loader(spy_loader):
+    return cdp.CsvFileParameter(spy_loader)
+
+
+@pytest.fixture
+def spy_loader():
+    class SpyCsvDoodlePollFileLoader:
+        def __init__(self):
+            self.opened_file = None
+
+        def set_opened_file(self, f):
+            self.opened_file = f
+
+    return SpyCsvDoodlePollFileLoader()
 
 
 def test_parse_doodle_poll_from_csv_str(csv_str):
-    poll = cdp.CsvDoodlePollFileLoader.parse_doodle_poll_from_csv_str(csv_str)
+    poll = csv_parser.parse_doodle_poll_from_csv_str(csv_str)
     assert len(poll.respondents) == 13
     assert poll.respondents == \
         ('*A', 'B', 'C', 'D', 'E', 'F', '*G', 'H', 'I', 'J', '*K', 'L', '*M')
     assert len(poll.datetimes) == 84
     assert len(poll.availabilities) == 13
     assert len(poll.availabilities[0]) == 84
-
-
-def test_get_meetings(csv_str):
-    poll = cdp.CsvDoodlePollFileLoader.parse_doodle_poll_from_csv_str(csv_str)
-    ms = poll.get_meetings()
-    assert len(ms) == 84
-    assert ms[0].participants == set(['E', 'H', 'I', 'J', 'L'])
-    assert ms[0].facilitators == set(['*A', '*G'])
-
-
-def test_get_meetings_treating_if_need_be_as_no(csv_str):
-    poll = cdp.CsvDoodlePollFileLoader.parse_doodle_poll_from_csv_str(csv_str)
-    ms = poll.get_meetings(treat_if_need_be_as_yes=False)
-    assert len(ms) == 84
-    assert len(ms[0].participants) == 3 and len(ms[0].facilitators) == 1
 
 
 def test_csv_file_parameter_deafults_to_stdin(
@@ -44,11 +51,11 @@ def test_csv_file_parameter_deafults_to_stdin(
 def test_csv_file_parameter_with_file_path(
         csv_file_parameter_with_spy_loader,
         dispatcher,
-        tmpfile
+        csv_file
         ):
     spy_loader = csv_file_parameter_with_spy_loader.loader
     dispatcher.add_param(csv_file_parameter_with_spy_loader)
-    dispatcher.dispatch(['--file', str(tmpfile)])
+    dispatcher.dispatch(['--file', str(csv_file)])
     assert hasattr(spy_loader.opened_file, 'read')
 
 
@@ -63,7 +70,7 @@ def test_loader_get_command_line_parameters():
     loader = cdp.CsvDoodlePollFileLoader()
     params = loader.get_command_line_parameters()
     assert len(params) == 1
-    assert isinstance(params[0], cdp.CsvDoodlePollFileLoader.CsvFileParameter)
+    assert isinstance(params[0], cdp.CsvFileParameter)
 
 
 def test_loader_set_opened_file(csv_file):
