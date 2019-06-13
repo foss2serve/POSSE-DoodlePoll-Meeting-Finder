@@ -1,7 +1,7 @@
 
 ## Development
 
-### Install development environment
+### Getting started
 
 1. Install Git
 2. Fork this project on GitHub
@@ -10,27 +10,14 @@
 5. Install pipenv
 6. On non-MacOS platforms, delete `Pipfile.lock`
 7. Install all python-based project dependencies, including those needed for development
+        $ pipenv install --dev
 
-```
-$ pipenv install --dev
-```
+### A typical day at the office
 
-### Running the development environment
-
-```
-$ pipenv shell
-```
-
-### Exiting the development environment
-
-```
-$ exit
-```
-
-### Run run tests
-
-First run the development environment, and then,
-
-```
-$ ./run_tests.bash
-```
+1. Start the virtual environment
+        $ pipenv shell
+2. Run the tests
+        $ ./run_tests.bash
+3. Make, test, and commit changes until I've had enough
+4. Exit the virtual environment
+        $ exit
