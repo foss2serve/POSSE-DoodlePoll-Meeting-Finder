@@ -20,7 +20,8 @@ from meeting_finder.meeting_filter import (
     MeetingFilter
 )
 from meeting_finder.meeting_conditions import (
-    MinStartCondition
+    MinStartCondition,
+    MaxStartCondition
 )
 
 
@@ -30,7 +31,8 @@ def main(args: List[str]) -> None:
         CsvDoodlePollFileLoader(),
         MeetingGenerator(),
         MeetingFilter([
-            MinStartCondition()
+            MinStartCondition(),
+            MaxStartCondition(),
         ])
     )
     app.run(args)
