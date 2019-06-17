@@ -17,11 +17,12 @@ from meeting_finder.meeting_generator import (
     MeetingGenerator
 )
 from meeting_finder.meeting_filter import (
-    MeetingFilter
-)
-from meeting_finder.meeting_conditions import (
+    MeetingFilter,
     MinStartCondition,
     MaxStartCondition
+)
+from meeting_finder.candidate_generator import (
+    CandidateGenerator
 )
 
 
@@ -33,7 +34,8 @@ def main(args: List[str]) -> None:
         MeetingFilter([
             MinStartCondition(),
             MaxStartCondition(),
-        ])
+        ]),
+        CandidateGenerator()
     )
     app.run(args)
 

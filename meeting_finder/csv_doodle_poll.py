@@ -26,10 +26,29 @@ class Response(Enum):
     IF_NEED_BE = 2
 
 
+class Respondent:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class Participant(Respondent):
+    pass
+
+
+class Facilitator(Respondent):
+    pass
+
+
 class DoodlePoll:
     def __init__(
             self,
-            respondents: Iterable[str],
+            respondents: Iterable[Respondent],
             datetimes: Iterable[datetime],
             availabilities: Iterable[Iterable[Response]]
             ) -> None:
@@ -86,7 +105,14 @@ def parse_doodle_poll_from_csv_str(csv_str: str) -> DoodlePoll:
         if data[i][0] == 'Count':
             names_end_row = i
             break
-    names = [r[0] for r in data[names_start_row:names_end_row]]
+    ns = [r[0] for r in data[names_start_row:names_end_row]]
+
+    names: List[Respondent] = []
+    for n in ns:
+        if n[0] == '*':
+            names.append(Facilitator(n))
+        else:
+            names.append(Participant(n))
 
     start_datetimes = []
     month_year_row = names_start_row - 3

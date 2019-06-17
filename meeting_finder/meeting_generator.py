@@ -14,7 +14,10 @@ from meeting_finder.command_line import (
 )
 from meeting_finder.csv_doodle_poll import (
     DoodlePoll,
-    Response
+    Response,
+    Respondent,
+    Facilitator,
+    Participant
 )
 
 
@@ -22,8 +25,8 @@ class Meeting:
     def __init__(
         self,
         start: datetime,
-        facilitators: Iterable[str],
-        participants: Iterable[str]
+        facilitators: Iterable[Facilitator],
+        participants: Iterable[Participant]
     ) -> None:
         self.start = start
         self.start_hour_24 = start.hour
@@ -65,9 +68,8 @@ class TreatIfNeedBeAsNoParameter(CommandLineParameter):
 
 
 def generate_meetings_from_doodle_poll(
-    poll: DoodlePoll,
-    treat_if_need_be_as_yes: bool
-) -> Iterable[Meeting]:
+        poll: DoodlePoll,
+        treat_if_need_be_as_yes: bool) -> Iterable[Meeting]:
     ms = []
 
     def is_yes(r: Response) -> bool:
@@ -75,17 +77,17 @@ def generate_meetings_from_doodle_poll(
         IF_NEED_BE = Response.IF_NEED_BE
         return r is YES or (treat_if_need_be_as_yes and r is IF_NEED_BE)
 
-    def is_facilitator(name: str) -> bool:
-        return name[0] == '*'
+    def is_facilitator(name: Respondent) -> bool:
+        return isinstance(name, Facilitator)
 
     for col, dt in enumerate(poll.datetimes):
-        facilitators: List[str] = []
-        participants: List[str] = []
+        facilitators: List[Facilitator] = []
+        participants: List[Participant] = []
         for row, name in enumerate(poll.respondents):
             if is_yes(poll.availabilities[row][col]):
-                if is_facilitator(name):
+                if isinstance(name, Facilitator):
                     facilitators.append(name)
-                else:
+                elif isinstance(name, Participant):
                     participants.append(name)
         m = Meeting(dt, facilitators, participants)
         ms.append(m)

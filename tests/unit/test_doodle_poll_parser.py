@@ -36,8 +36,9 @@ def spy_loader():
 
 def test_parse_doodle_poll_from_csv_str(csv_str):
     poll = parse_doodle_poll_from_csv_str(csv_str)
-    assert len(poll.respondents) == 13
-    assert poll.respondents == \
+    respondents = tuple(str(r) for r in poll.respondents)
+    assert len(respondents) == 13
+    assert respondents == \
         ('*A', 'B', 'C', 'D', 'E', 'F', '*G', 'H', 'I', 'J', '*K', 'L', '*M')
     assert len(poll.datetimes) == 84
     assert len(poll.availabilities) == 13
